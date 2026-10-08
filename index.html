@@ -93,6 +93,30 @@ nav button i{font-style:normal;font-size:20px}nav button.on{color:var(--y)}
 .empty-msg{color:var(--mute);text-align:center;padding:30px 10px}
 .foot{color:var(--mute);font-size:11.5px;text-align:center;margin:22px 0 6px}
 .load{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:60;background:#1d1e24;border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:12px;font-weight:700}
+
+body.noscroll{overflow:hidden}
+#sheet{position:fixed;inset:0;z-index:50;background:radial-gradient(ellipse at 50% 30%,#1b1d26,#07080b 70%);display:block;overflow-y:auto;overscroll-behavior:contain;animation:fi .2s;padding:0 0 calc(24px + env(safe-area-inset-bottom))}
+#sheet .zt{position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top) + 14px) var(--pad) 8px;background:linear-gradient(#07080b 60%,transparent)}
+#sheet .zc{color:var(--mute);font-size:12px;font-weight:700}
+#sheet .zx{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.06);font-size:16px}
+#sheet .zs{display:flex;align-items:center;justify-content:center;gap:6px;padding:18px 6px 10px;perspective:1100px}
+#sheet .zs.inr .tc{animation:zr .28s ease-out}#sheet .zs.inl .tc{animation:zl .28s ease-out}
+@keyframes zr{from{transform:translateX(40px);opacity:0}}@keyframes zl{from{transform:translateX(-40px);opacity:0}}
+.zn{flex:0 0 34px;height:54px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.05);font-size:26px;line-height:1}
+.zn:disabled{opacity:.2}
+.tc{position:relative;width:min(70vw,340px);aspect-ratio:.716;border-radius:4.6%/3.3%;overflow:hidden;transform:rotateX(var(--rx,0)) rotateY(var(--ry,0));transition:transform .45s cubic-bezier(.2,.8,.2,1);box-shadow:0 26px 50px rgba(0,0,0,.65);touch-action:none;user-select:none;-webkit-user-select:none}
+.tc.live{transition:transform .06s}
+.tc img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.tc-holo,.tc-glare{position:absolute;inset:0;pointer-events:none;opacity:var(--o,0);transition:opacity .3s}
+.tc-holo{mix-blend-mode:color-dodge;opacity:calc(var(--o,0)*.45);background:repeating-linear-gradient(110deg,hsl(0 90% 60%) 0,hsl(50 95% 60%) 5%,hsl(140 80% 55%) 10%,hsl(200 95% 60%) 15%,hsl(280 90% 66%) 20%,hsl(360 90% 60%) 25%);background-size:300% 300%;background-position:var(--x,50%) var(--y,50%);
+  -webkit-mask:radial-gradient(circle at var(--x,50%) var(--y,50%),#000 0,rgba(0,0,0,.5) 30%,transparent 70%);mask:radial-gradient(circle at var(--x,50%) var(--y,50%),#000 0,rgba(0,0,0,.5) 30%,transparent 70%)}
+.tc-glare{mix-blend-mode:overlay;background:radial-gradient(circle at var(--x,50%) var(--y,50%),rgba(255,255,255,.75),transparent 55%)}
+#sheet .in{max-width:560px;margin:0 auto;padding:6px var(--pad) 0}
+#sheet.expo{overflow:hidden}#sheet.expo .in,#sheet.expo .zn{display:none}#sheet.expo .zs{min-height:calc(100dvh - 90px);padding:0}
+#sheet.expo .tc{width:min(94vw,calc((100dvh - 110px)*.716))}
+.zh{color:var(--mute);font-size:11.5px;text-align:center;margin:14px 0 0}
+.kv .pos b{color:var(--ok)}.kv .neg b{color:var(--miss)}
+.chip.st-ok{border-color:rgba(79,210,122,.45);color:#a6f2b8}.chip.st-buy{border-color:rgba(111,168,255,.45);color:#b9d3ff}.chip.st-mis{border-color:rgba(255,138,122,.45);color:#FFB2A6}
 </style></head>
 <body>
 <div id="lock">
@@ -106,7 +130,7 @@ nav button i{font-style:normal;font-size:20px}nav button.on{color:var(--y)}
 <div id="app" class="hide">
   <header><button class="back hide" id="back" aria-label="Atrás">‹</button><h2 id="ttl">Mis binders<small id="sub"></small></h2></header>
   <main id="view"></main>
-  <nav><button data-t="home" class="on"><i>▦</i>Binders</button><button data-t="all"><i>⌕</i>Buscar</button><button data-t="case"><i>◫</i>Maletín</button><button data-t="more"><i>⋯</i>Más</button></nav>
+  <nav><button data-t="home" class="on"><i>▦</i>Binders</button><button data-t="all"><i>⌕</i>Buscar</button><button data-t="scan"><i>⌖</i>Escanear</button><button data-t="more"><i>⋯</i>Más</button></nav>
 </div>
 <script>
 'use strict';
@@ -124,8 +148,8 @@ async function dec(buf,key){const u=new Uint8Array(buf);return crypto.subtle.dec
 async function getBin(name){const r=await fetch('data/'+name+'?v='+(META.h[name]||Date.now()));if(!r.ok)throw new Error('No se pudo descargar '+name);return r.arrayBuffer()}
 async function tryKey(key){const t=await dec(b64d(META.check),key);return new TextDecoder().decode(t)==='pokeindex'}
 async function unlock(pw,remember){const key=await deriveKey(pw,META);if(!await tryKey(key).catch(()=>false))throw new Error('Contraseña incorrecta.');
-  KEY=key;if(remember){try{const raw=await crypto.subtle.exportKey('raw',key);localStorage.setItem(KEYK,JSON.stringify({s:META.salt,k:btoa(String.fromCharCode(...new Uint8Array(raw)))}))}catch(e){}}}
-async function savedKey(){try{const o=JSON.parse(localStorage.getItem(KEYK)||'null');if(!o||o.s!==META.salt)return null;
+  KEY=key;try{const raw=await crypto.subtle.exportKey('raw',key);sessionStorage.setItem(KEYK,JSON.stringify({s:META.salt,k:btoa(String.fromCharCode(...new Uint8Array(raw)))}))}catch(e){}if(remember){try{const raw=await crypto.subtle.exportKey('raw',key);localStorage.setItem(KEYK,JSON.stringify({s:META.salt,k:btoa(String.fromCharCode(...new Uint8Array(raw)))}))}catch(e){}}}
+async function savedKey(){try{const o=JSON.parse(sessionStorage.getItem(KEYK)||localStorage.getItem(KEYK)||'null');if(!o||o.s!==META.salt)return null;
   const k=await crypto.subtle.importKey('raw',b64d(o.k),{name:'AES-GCM'},true,['decrypt']);return await tryKey(k).catch(()=>false)?k:null}catch(e){return null}}
 async function loadAll(){const t=el('div','load','Cargando…');document.body.appendChild(t);
   try{D=JSON.parse(new TextDecoder().decode(await dec(await getBin('d.bin'))));
@@ -144,16 +168,16 @@ function stats(b){let n=0,g=0,v=0,miss=0,inv=0,pf=0;b.pages.forEach((pg,p)=>{if(
 function setHead(t,s,back){$('#ttl').firstChild.textContent=t;$('#sub').textContent=s||'';$('#back').classList.toggle('hide',!back)}
 function render(){const v=$('#view');v.innerHTML='';const top=stack[stack.length-1];
   if(top)return top.f(v);
-  if(tab==='home')home(v);else if(tab==='all')search(v);else if(tab==='case')maletin(v);else more(v)}
+  if(tab==='home')home(v);else if(tab==='all')search(v);else more(v)}
 function go(f){stack.push({f});render();scrollTo(0,0)}
 $('#back').onclick=()=>{stack.pop();render()};
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;stack=[];document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));render();scrollTo(0,0)});
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{if(b.dataset.t==='scan'){location.href='scan.html';return}tab=b.dataset.t;stack=[];document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));render();scrollTo(0,0)});
 addEventListener('popstate',()=>{});
 const when=iso=>{const d=new Date(iso);return d.toLocaleDateString('es-ES',{day:'numeric',month:'short'})+' · '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})};
 function home(v){setHead('Mis binders','Guardado en el PC el '+when(D.at));
   const col=D.binders.filter(b=>b.kind!=='ventas');let T={n:0,g:0,v:0,miss:0,inv:0,pf:0};col.forEach(b=>{const s=stats(b);for(const k in T)T[k]+=s[k]});
   const k=el('div','kpis');const kp=(l,val,c)=>{const d=el('div','kpi'+(c?' '+c:''));d.append(el('span',null,l),el('b',null,val));k.appendChild(d);return d};
-  kp('INVERSIÓN',eur(T.inv));kp('PROFIT',(T.pf>0?'+':'')+eur(T.pf),T.pf<0?'neg':'pos');kp('COLECCIÓN',eur(T.v));kp('PARA COMPLETAR',eur(T.miss),'miss');
+  kp('INVERSIÓN',eur(T.inv));kp('PROFIT',(T.pf>=0?'+':'')+eur(T.pf),T.pf<0?'neg':'pos');kp('COLECCIÓN',eur(T.v));kp('PARA COMPLETAR',eur(T.miss),'miss');
   const w=kp('CARTAS',T.g+' / '+T.n,'wide');v.appendChild(k);
   v.appendChild(el('div','sec','BINDERS'));const L=el('div','list');
   D.binders.forEach(b=>{const s=stats(b),r=el('button','row');const ic=el('img','ic');ic.alt='';const src=IMG['ic:'+b.id];if(src)ic.src=src;
@@ -162,8 +186,6 @@ function home(v){setHead('Mis binders','Guardado en el PC el '+when(D.at));
     else{tx.append(el('small',null,`${s.g} de ${s.n} · ${Math.floor(b.pages.length/2)} dobles páginas`));const bar=el('div','bar');const g=el('i','g'),c=el('i','c');g.style.width=(s.n?s.g/s.n*100:0)+'%';
       const nb=b.pages.flat().filter(x=>x&&x.st==='comprada').length;c.style.width=(s.n?nb/s.n*100:0)+'%';bar.append(g,c);tx.appendChild(bar)}
     r.append(ic,tx,el('span','v',eur(s.v)));r.onclick=()=>go(x=>binder(x,b));L.appendChild(r)});v.appendChild(L);
-  if(D.maletin&&D.maletin.some(Boolean)){v.appendChild(el('div','sec','MALETÍN'));const r=el('button','row');const n=D.maletin.filter(Boolean).length;
-    const tx=el('div','tx');tx.append(el('b',null,'Cartas gradeadas'),el('small',null,`${n} de 20 fundas`));r.append(el('span','ic'),tx);r.onclick=()=>{document.querySelector('nav [data-t=case]').click()};v.appendChild(r)}
   v.appendChild(el('div','foot','Solo consulta · los cambios se hacen en el ordenador'))}
 function binder(v,b){setHead(b.name,b.kind==='ventas'?'Binder de ventas':'Binder',true);const L=el('div','list');
   for(let sp=0;sp*2<b.pages.length;sp++){const ps=[sp*2,sp*2+1].filter(p=>p>0&&b.pages[p]);let n=0,g=0,c=0,val=0;
@@ -179,7 +201,7 @@ function slotEl(x,ctx){const c=x.c;if(!c){const s=el('div','slot empty');return 
   const d=el('i','st '+stCls(c.st));s.appendChild(d);if(num(c.pc)!==null)s.appendChild(el('span','pr',eur(c.pc)));
   s.onclick=()=>sheet(x,ctx);return s}
 function spread(v,b,sp){setHead(b.titles[sp]||`Hojas ${sp*2+1}–${sp*2+2}`,b.name,true);
-  [sp*2,sp*2+1].forEach(p=>{if(p<1||!b.pages[p])return;v.appendChild(el('div','pg','Hoja '+(p+1)));const g=el('div','grid');b.pages[p].forEach((c,i)=>g.appendChild(slotEl({b,p,i,c},null)));v.appendChild(g)})}
+  [sp*2,sp*2+1].forEach(p=>{if(p<1||!b.pages[p])return;v.appendChild(el('div','pg','Hoja '+(p+1)));const g=el('div','grid');const L=[];[sp*2,sp*2+1].forEach(q=>{if(q>0&&b.pages[q])b.pages[q].forEach((cc,ii)=>{if(cc)L.push({b,p:q,i:ii,c:cc})})});b.pages[p].forEach((c,i)=>g.appendChild(slotEl({b,p,i,c},L)));v.appendChild(g)})}
 let F={q:'',st:'',reg:'',b:''};
 function search(v){setHead('Buscar','Todas tus cartas');
   const t=el('div','tools');const q=el('input');q.type='search';q.placeholder='Nombre o código';q.value=F.q;const bs=el('select');bs.innerHTML='<option value="">Todos</option>'+D.binders.map(b=>`<option value="${b.id}">${b.name.replace(/</g,'')}</option>`).join('');bs.value=F.b;t.append(q,bs);v.appendChild(t);
@@ -190,30 +212,50 @@ function search(v){setHead('Buscar','Todas tus cartas');
     let val=0;L.forEach(x=>{if(x.c.st!=='no-comprada')val+=num(x.c.pc)||0});box.appendChild(el('div','pg',`${L.length} cartas · ${eur(val)}`));
     const g=el('div','grid auto');L.slice(0,400).forEach(x=>g.appendChild(slotEl(x,L)));box.appendChild(g);if(L.length>400)box.appendChild(el('div','foot','Mostrando 400 · afina la búsqueda'))};
   q.oninput=()=>{F.q=q.value;draw()};bs.onchange=()=>{F.b=bs.value;draw()};draw()}
-function sheet(x,list){const c=x.c,b=x.b;const o=el('div');o.id='sheet';const i=el('div','in');i.appendChild(el('div','grab'));
-  const src=imgOf(c);if(src){const im=el('img','big');im.src=src;im.alt='';i.appendChild(im)}
-  i.appendChild(el('h3',null,c.n));const ch=el('div','chips');[c.lang,c.reg,b.name].filter(Boolean).forEach(t=>ch.appendChild(el('span','chip',t)));const st=el('span','chip',stTxt(c,b));ch.prepend(st);i.appendChild(ch);
-  const kv=el('div','kv');const add=(l,val,w)=>{if(val===null||val===undefined||val==='')return;const d=el('div',w?'w':'');d.append(el('span',null,l),el('b',null,val));kv.appendChild(d)};
-  const a=num(c.pc),bp=num(c.pp);add('Precio actual',a!==null?eur(a):'—');add(b.kind==='ventas'?'Precio de compra':'Comprado por',bp!==null?eur(bp):'—');
-  if(b.kind==='ventas'){add('Precio de venta',num(c.sp)!==null?eur(c.sp):'');if(c.st==='comprada'&&num(c.sp)!==null&&bp!==null)add('Beneficio',(c.sp-bp>=0?'+':'')+eur(c.sp-bp));add('Comprador',c.buyer);add('Fecha de venta',c.sd)}
-  else if(a!==null&&bp!==null)add('Profit',(a-bp>=0?'+':'')+eur(a-bp));
-  if(c.st!=='no-comprada'||c.cond)add('Estado de la carta',c.cond||(c.st!=='no-comprada'?'Near Mint':''));
-  add(c.open?'Fecha de apertura':'Fecha de compra',c.bd);if(!c.open&&c.st!=='no-comprada')add('Dónde la compraste',c.bp||'CardMarket');
-  if(c.pd)add('Precio actualizado',c.pd);add('Dónde está',`${b.name} · hoja ${x.p+1} · hueco ${x.i+1}`,1);if(c.tags&&c.tags.length)add('Etiquetas',c.tags.join(', '),1);if(c.note)add('Nota',c.note,1);
-  i.appendChild(kv);if(c.cm){const l=el('a','link','Ver ofertas en Cardmarket');l.href=c.cm;l.target='_blank';l.rel='noopener';i.appendChild(l)}
-  o.appendChild(i);o.onclick=e=>{if(e.target===o)o.remove()};document.body.appendChild(o);
-  let y0=null;i.addEventListener('touchstart',e=>{if(i.scrollTop<=0)y0=e.touches[0].clientY},{passive:true});i.addEventListener('touchend',e=>{if(y0!==null&&e.changedTouches[0].clientY-y0>90)o.remove();y0=null})}
-function maletin(v){setHead('Maletín','Cartas gradeadas');const S=(D.maletin||[]);if(!S.some(Boolean)){v.appendChild(el('div','empty-msg','El maletín está vacío.'));return}
-  let tot=0;S.forEach(e=>{if(e)tot+=num(e.vp)??num(e.pc)??0});v.appendChild(el('div','pg',`${S.filter(Boolean).length} de 20 fundas · ${eur(tot)}`));
-  const g=el('div','grid');g.style.gridTemplateColumns='repeat(3,1fr)';
-  S.forEach((e,k)=>{if(!e)return;const s=el('button','slab');s.style.border='0';s.style.cursor='pointer';
-    const lb=el('div','lb');const d1=el('div');d1.append(el('span',null,[e.year,e.l1].filter(Boolean).join(' ')),el('span',null,e.num||''));const d2=el('div');d2.append(el('span',null,e.l2||''),el('span',null,(e.gl||'')+' '+(e.g||'')));lb.append(d1,d2);
-    const wn=el('div','wn');const im=el('img');im.alt='';im.src=IMG[e.im]||'';wn.appendChild(im);s.append(lb,wn);
-    s.onclick=()=>{const o=el('div');o.id='sheet';const i=el('div','in');i.appendChild(el('div','grab'));const sl=s.cloneNode(true);sl.style.width='min(70vw,280px)';sl.style.margin='0 auto 14px';i.appendChild(sl);
-      i.appendChild(el('h3',null,e.n||e.l2));const kv=el('div','kv');const add=(l,val,w)=>{if(!val&&val!==0)return;const d=el('div',w?'w':'');d.append(el('span',null,l),el('b',null,val));kv.appendChild(d)};
-      add('Nota PSA',(e.g||'')+' · '+(e.gl||''));add('Certificado',e.cert||'—');add('Valor de la carta',num(e.pc)!==null?eur(e.pc):'—');add('Valor gradeada',num(e.vp)!==null?eur(e.vp):'—');add('Hueco',String(k+1));if(e.note)add('Nota',e.note,1);
-      i.appendChild(kv);o.appendChild(i);o.onclick=ev=>{if(ev.target===o)o.remove()};document.body.appendChild(o)};
-    g.appendChild(s)});v.appendChild(g)}
+/* ---------- ficha y modo zoom (inclinar con el dedo o moviendo el móvil, pasar de carta) ---------- */
+const HQ={};
+async function hqOf(c){if(!c.hq)return c.imgL||null;if(HQ[c.hq])return HQ[c.hq];
+  try{const r=await fetch('data/hq/'+c.hq+'.bin');if(!r.ok)return null;const u=URL.createObjectURL(new Blob([await dec(await r.arrayBuffer())],{type:'image/jpeg'}));HQ[c.hq]=u;return u}catch(e){return null}}
+function tiltCard(c){const w=el('div','tc');const im=el('img');im.alt='';im.src=imgOf(c)||'';im.draggable=false;w.append(im,el('i','tc-holo'),el('i','tc-glare'));
+  hqOf(c).then(u=>{if(u&&w.isConnected!==false){const pre=new Image();pre.onload=()=>{im.src=u};pre.src=u}});
+  let touching=false,gx=null,gy=null;
+  const set=(x,y,o)=>{w.style.setProperty('--rx',((.5-y)*26).toFixed(2)+'deg');w.style.setProperty('--ry',((x-.5)*30).toFixed(2)+'deg');
+    w.style.setProperty('--x',(x*100).toFixed(1)+'%');w.style.setProperty('--y',(y*100).toFixed(1)+'%');w.style.setProperty('--o',o)};
+  const pt=e=>{const r=w.getBoundingClientRect(),t=e.touches?e.touches[0]:e;return[Math.min(1,Math.max(0,(t.clientX-r.left)/r.width)),Math.min(1,Math.max(0,(t.clientY-r.top)/r.height))]};
+  let px=0,py=0;w.addEventListener('pointerdown',e=>{px=e.clientX;py=e.clientY;w._moved=false;touching=true;w.classList.add('live');w.setPointerCapture(e.pointerId);const [x,y]=pt(e);set(x,y,1)});
+  w.addEventListener('pointermove',e=>{if(!touching)return;if(Math.hypot(e.clientX-px,e.clientY-py)>8)w._moved=true;const [x,y]=pt(e);set(x,y,1)});
+  const up=()=>{touching=false;w.classList.remove('live');set(.5,.5,0)};w.addEventListener('pointerup',up);w.addEventListener('pointercancel',up);
+  w._gyro=e=>{if(touching||e.beta==null)return;if(gx===null){gx=e.gamma;gy=e.beta}const x=.5+Math.max(-.5,Math.min(.5,(e.gamma-gx)/40)),y=.5+Math.max(-.5,Math.min(.5,(e.beta-gy)/40));set(x,y,.75)};
+  addEventListener('deviceorientation',w._gyro);set(.5,.5,0);return w}
+function closeTilts(root){root.querySelectorAll('.tc').forEach(t=>removeEventListener('deviceorientation',t._gyro))}
+function sheet(x,list){list=list&&list.length?list:[x];let k=Math.max(0,list.findIndex(y=>y.b===x.b&&y.p===x.p&&y.i===x.i));
+  document.getElementById('sheet')?.remove();const o=el('div');o.id='sheet';document.body.appendChild(o);document.body.classList.add('noscroll');
+  const close=()=>{closeTilts(o);o.remove();document.body.classList.remove('noscroll');history.state&&history.state.z&&history.back()};
+  history.pushState({z:1},'');const onPop=()=>{removeEventListener('popstate',onPop);closeTilts(o);o.remove();document.body.classList.remove('noscroll')};addEventListener('popstate',onPop);
+  const draw=dir=>{closeTilts(o);o.innerHTML='';const y=list[k],c=y.c,b=y.b;
+    const top=el('div','zt');const x1=el('button','zx','✕');x1.setAttribute('aria-label','Cerrar');x1.onclick=()=>{removeEventListener('popstate',onPop);close()};
+    top.append(el('span','zc',list.length>1?`${k+1} / ${list.length}`:''),x1);o.appendChild(top);
+    const stage=el('div','zs'+(dir?' in'+dir:''));const prev=el('button','zn','‹'),next=el('button','zn','›');prev.disabled=k===0;next.disabled=k===list.length-1;
+    prev.onclick=()=>{if(k>0){k--;draw('l')}};next.onclick=()=>{if(k<list.length-1){k++;draw('r')}};
+    const tc=tiltCard(c);stage.append(prev,tc,next);o.appendChild(stage);
+    tc.addEventListener('click',()=>{if(tc._moved)return;o.classList.toggle('expo')});
+    let sx=null,sy=null;
+    stage.addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;sx=null;if(e.target.closest('.tc'))return;if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)){dx<0?next.click():prev.click()}});
+    stage.addEventListener('touchstart',e=>{if(!e.target.closest('.tc')){sx=e.touches[0].clientX;sy=e.touches[0].clientY}},{passive:true});
+    const i=el('div','in');i.appendChild(el('h3',null,c.n));const ch=el('div','chips');const st=el('span','chip st-'+stCls(c.st),stTxt(c,b));ch.appendChild(st);[c.lang,c.reg,b.name].filter(Boolean).forEach(t=>ch.appendChild(el('span','chip',t)));i.appendChild(ch);
+    const kv=el('div','kv');const add=(l,val,w,cls)=>{if(val===null||val===undefined||val==='')return;const d=el('div',(w?'w ':'')+(cls||''));d.append(el('span',null,l),el('b',null,val));kv.appendChild(d)};
+    const a=num(c.pc),bp=num(c.pp);add('Precio actual',a!==null?eur(a):'—');add(b.kind==='ventas'?'Precio de compra':'Comprado por',bp!==null?eur(bp):'—');
+    const pf=(l,v)=>add(l,(v>=0?'+':'')+eur(v),0,v>=0?'pos':'neg');
+    if(b.kind==='ventas'){add('Precio de venta',num(c.sp)!==null?eur(c.sp):'');if(c.st==='comprada'&&num(c.sp)!==null&&bp!==null)pf('Beneficio',c.sp-bp);add('Comprador',c.buyer);add('Fecha de venta',c.sd)}
+    else if(a!==null&&bp!==null)pf('Profit',a-bp);
+    if(c.st!=='no-comprada'||c.cond)add('Estado de la carta',c.cond||(c.st!=='no-comprada'?'Near Mint':''));
+    add(c.open?'Fecha de apertura':'Fecha de compra',c.bd);if(!c.open&&c.st!=='no-comprada')add('Dónde la compraste',c.bp||'CardMarket');
+    if(c.pd)add('Precio actualizado',c.pd);add('Dónde está',`${b.name} · hoja ${y.p+1} · hueco ${y.i+1}`,1);if(c.tags&&c.tags.length)add('Etiquetas',c.tags.join(', '),1);if(c.note)add('Nota',c.note,1);
+    i.appendChild(kv);if(c.cm){const l=el('a','link','Ver ofertas en Cardmarket');l.href=c.cm;l.target='_blank';l.rel='noopener';i.appendChild(l)}
+    i.appendChild(el('p','zh','Toca la carta para verla en grande · arrastra el dedo o mueve el móvil para inclinarla'));
+    o.appendChild(i);o.scrollTop=0;
+    for(const d of [k-1,k+1])if(list[d])hqOf(list[d].c)};
+  draw()}
 function more(v){setHead('Más','');const L=el('div','list');
   const r1=el('button','row');r1.append(el('div','tx'));r1.firstChild.append(el('b',null,'Buscar datos nuevos'),el('small',null,'Descarga el último guardado del ordenador'));r1.onclick=()=>location.reload();
   const r2=el('button','row');r2.append(el('div','tx'));r2.firstChild.append(el('b',null,'Olvidar la contraseña en este móvil'),el('small',null,'La próxima vez te la pedirá'));r2.onclick=()=>{localStorage.removeItem(KEYK);location.reload()};

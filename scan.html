@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0c10"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png">
+<title>PokeIndex · Escáner</title>
+<style>.pi-back{font-size:28px;line-height:1;color:#FFCB05;text-decoration:none;padding:0 6px 0 0}
+:root{--bg:#0b0c10;--card:#15171d;--line:#2a2d36;--ink:#f1eee7;--mut:#9a958a;--gold:#ffcb05;--ok:#4ade80;--bad:#ff6b6b;--blue:#7ea7ff}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+body{padding:calc(12px + env(safe-area-inset-top)) 14px calc(90px + env(safe-area-inset-bottom))}
+header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+header img{width:38px;height:38px;border-radius:9px}
+header b{font-size:17px;letter-spacing:.02em}header small{display:block;color:var(--mut);font-size:12px}
+.dot{width:9px;height:9px;border-radius:50%;background:#666;margin-left:auto;box-shadow:0 0 0 3px rgba(255,255,255,.04)}
+.dot.on{background:var(--ok)}.dot.off{background:var(--bad)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.card h3{margin:0 0 10px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+label{display:block;font-size:12px;color:var(--mut);font-weight:600;margin:8px 0 4px}
+input,select{width:100%;height:44px;border-radius:11px;border:1px solid var(--line);background:#0f1116;color:var(--ink);padding:0 12px;font-size:16px}
+input:focus,select:focus{outline:none;border-color:rgba(255,203,5,.6)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.row3{display:grid;grid-template-columns:1.1fr 1fr .8fr;gap:8px}
+button{font:inherit;cursor:pointer}
+.big{width:100%;height:64px;border:0;border-radius:16px;background:var(--gold);color:#1a1a1a;font-size:18px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:10px}
+.btn{height:44px;padding:0 14px;border-radius:11px;border:1px solid var(--line);background:#1d2028;color:var(--ink);font-weight:700}
+.btn.gold{background:var(--gold);color:#1a1a1a;border-color:var(--gold)}.btn.wide{width:100%}
+.btns{display:flex;gap:8px;margin-top:10px}.btns>*{flex:1}
+.hint{color:var(--mut);font-size:13px;margin:8px 0 0}
+.stage{position:relative;margin:0 -4px;touch-action:none;user-select:none;border-radius:12px;overflow:hidden;background:#000}
+.stage canvas{display:block;width:100%;height:auto}
+.box{position:absolute;border:2px solid var(--gold);border-radius:6px;box-shadow:0 0 0 9999px rgba(0,0,0,.45);touch-action:none}
+.box i{position:absolute;right:-12px;bottom:-12px;width:26px;height:26px;border-radius:50%;background:var(--gold);border:3px solid #111}
+.box span{position:absolute;left:0;top:-24px;font-size:11px;font-weight:800;color:#111;background:var(--gold);padding:2px 7px;border-radius:6px;white-space:nowrap}
+.zoom{margin-top:10px;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#000}.zoom canvas{display:block;width:100%}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.chip{padding:4px 10px;border-radius:999px;background:#1d2028;border:1px solid var(--line);font-size:12px;font-weight:700}
+.chip.ok{border-color:rgba(74,222,128,.5);color:var(--ok)}
+.cands{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.cand{background:#0f1116;border:2px solid var(--line);border-radius:10px;padding:4px;text-align:center;font-size:11px;color:var(--mut)}
+.cand img{width:100%;aspect-ratio:63/88;object-fit:cover;border-radius:6px;background:#222;display:block;margin-bottom:3px}
+.cand.on{border-color:var(--gold);color:var(--ink)}
+.seg{display:flex;gap:6px}.seg button{flex:1;height:42px;border-radius:10px;border:1px solid var(--line);background:#0f1116;color:var(--mut);font-weight:700;font-size:14px}
+.seg button.on{background:rgba(255,203,5,.12);border-color:var(--gold);color:var(--gold)}
+.send{position:fixed;left:14px;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:5}
+.send .big{box-shadow:0 10px 30px rgba(0,0,0,.6)}
+.toast{position:fixed;left:50%;top:16px;transform:translateX(-50%);background:#1f2430;border:1px solid var(--line);padding:10px 16px;border-radius:12px;font-weight:700;z-index:9;max-width:92vw;display:none}
+.toast.ok{border-color:rgba(74,222,128,.5)}.toast.err{border-color:rgba(255,107,107,.6)}
+.spin{display:inline-block;width:18px;height:18px;border:3px solid rgba(0,0,0,.25);border-top-color:#1a1a1a;border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.prev{width:120px;aspect-ratio:63/88;object-fit:cover;border-radius:8px;border:1px solid var(--line);display:none;margin-top:8px}
+.ja{font-size:12px;color:var(--mut);margin-top:4px}
+[hidden]{display:none!important}
+.nores{padding:10px 12px;border-radius:12px;background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.3);font-size:13px;margin-top:10px}
+</style></head><body>
+<header><a href="./" class="pi-back" aria-label="Volver a PokeIndex móvil">‹</a><img id="logo" alt="" src="icon-192.png"><div><b>PokeIndex · Escáner</b><small id="conn">Preparando…</small></div><i class="dot" id="dot"></i></header>
+
+<section class="card" id="cfg">
+  <h3>Destino</h3>
+  <div class="row"><div><label>Binder</label><select id="binder"></select></div>
+  <div><label>Dónde</label><select id="dest"><option value="tray">Almacén</option><option value="slot">Primer hueco libre</option></select></div></div>
+</section>
+
+<section id="start">
+  <button class="big" id="shot" type="button">📷 Escanear carta</button>
+  <div class="btns"><button class="btn" id="gal" type="button">Elegir de la galería</button></div>
+  <p class="hint">Haz la foto de cerca, con la carta recta llenando casi toda la pantalla y sin reflejos sobre el código de abajo a la izquierda (por ejemplo «s8b 189/184»).</p>
+  <input type="file" id="fCam" accept="image/*" capture="environment" hidden><input type="file" id="fGal" accept="image/*" hidden>
+</section>
+
+<section class="card" id="photo" hidden>
+  <h3>1 · Código de la carta</h3>
+  <div class="stage" id="stage"><canvas id="cv"></canvas><div class="box" id="box"><span>Código</span><i></i></div></div>
+  <p class="hint">Arrastra el recuadro amarillo sobre el código (abajo a la izquierda) y ajústalo con el círculo.</p>
+  <div class="zoom"><canvas id="zv"></canvas></div>
+  <div class="btns"><button class="btn" id="again" type="button">Otra foto</button><button class="btn gold" id="read" type="button">Leer código</button></div>
+</section>
+
+<section class="card" id="result" hidden>
+  <h3>2 · Carta</h3>
+  <div class="chips" id="chips"></div>
+  <div class="row3"><div><label>Código</label><input id="code" autocapitalize="off" autocomplete="off" placeholder="s8b"></div>
+  <div><label>Número</label><input id="num" autocapitalize="characters" autocomplete="off" placeholder="189/184"></div>
+  <div><label>Idioma</label><select id="lang"><option value="ja">JP</option><option value="en">EN</option></select></div></div>
+  <div class="btns"><button class="btn wide" id="find" type="button">Buscar la carta</button></div>
+  <div class="cands" id="cands"></div>
+  <div class="nores" id="nores" hidden>No la encuentro en TCGdex. Escribe el nombre y busca una imagen de buena calidad en Google: mantén pulsada la imagen › «Copiar dirección de la imagen» y pégala abajo. Si lo dejas vacío, en el PC podrás añadirla después.
+    <div class="btns"><button class="btn" id="google" type="button">🔎 Buscar imagen en Google</button></div>
+    <label>Enlace de la imagen</label><input id="imgUrl" inputmode="url" placeholder="https://…"><img class="prev" id="prev" alt="">
+  </div>
+  <label>Nombre en el binder</label><input id="name" placeholder="Mewtwo ex (30C 157)"><div class="ja" id="jaName"></div>
+  <label>Estado</label><div class="seg" id="status"></div>
+  <label>Precio de compra (€)</label><input id="buy" type="number" inputmode="decimal" step="0.01" min="0" placeholder="Opcional">
+</section>
+
+<div class="send" id="sendBar" hidden><button class="big" id="send" type="button">Enviar</button></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+/* ---- PokeIndex móvil: todo se hace en el propio teléfono; la carta llega al PC por tu GitHub (cifrada) ---- */
+const PIK='pi-movil-key';const b64d=x=>Uint8Array.from(atob(x),c=>c.charCodeAt(0));
+const b64e=u=>{let t='';for(let i=0;i<u.length;i+=32768)t+=String.fromCharCode.apply(null,u.subarray(i,i+32768));return btoa(t)};
+let KEY=null,META=null,GH=null;
+async function piKey(){const raw=sessionStorage.getItem(PIK)||localStorage.getItem(PIK);if(!raw)return null;const o=JSON.parse(raw);
+  return crypto.subtle.importKey('raw',b64d(o.k),{name:'AES-GCM'},false,['encrypt','decrypt'])}
+async function piDec(buf){const u=new Uint8Array(buf);return crypto.subtle.decrypt({name:'AES-GCM',iv:u.slice(0,12)},KEY,u.slice(12))}
+async function piEnc(bytes){const iv=crypto.getRandomValues(new Uint8Array(12));const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},KEY,bytes));const o=new Uint8Array(12+ct.length);o.set(iv);o.set(ct,12);return o}
+async function piFile(n){const r=await fetch('data/'+n+'?v='+((META.h||{})[n]||Date.now()),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);return r.arrayBuffer()}
+const getJ=async u=>{const r=await fetch(u);if(!r.ok)throw new Error('HTTP '+r.status);return r.json()};
+/* lectura del código en el propio móvil (la primera vez descarga el lector, unos 10 MB) */
+let OCRW=null;
+function loadScript(src){return new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>no(new Error('No se pudo cargar el lector'));document.head.appendChild(s)})}
+async function ocrWorker(){if(OCRW)return OCRW;if(!window.Tesseract)await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
+  OCRW=await Tesseract.createWorker('eng',1,{langPath:'https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng/4.0.0_best_int'});
+  await OCRW.setParameters({tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/-',tessedit_pageseg_mode:'11'});return OCRW}
+async function ocrLocal(images){const w=await ocrWorker(),out=[];for(const d of images){try{const r=await w.recognize(d);out.push(r.data.text||'')}catch(e){out.push('')}}return out}
+let tt=0;function toast(m,k){const t=$('toast');t.textContent=m;t.className='toast '+(k||'');t.style.display='block';clearTimeout(tt);tt=setTimeout(()=>t.style.display='none',k==='err'?6000:3500)}
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+/* ---------- conexión y binders ---------- */
+let BINDERS=[];
+async function ping(){try{const r=await fetch('data/meta.json?t='+Date.now(),{cache:'no-store'});META=await r.json();KEY=await piKey();if(!KEY)throw new Error('k');
+    try{GH=JSON.parse(new TextDecoder().decode(await piDec(await piFile('t.bin'))))}catch(e){GH=null}
+    $('dot').className='dot '+(GH?'on':'off');$('conn').textContent=GH?'La carta llegará al PC al abrir PokeIndex':'Vuelve a publicar desde el PC para poder enviar';return true}
+  catch(e){$('dot').className='dot off';$('conn').textContent=e.message==='k'?'Abre primero PokeIndex móvil y escribe tu contraseña':'Sin conexión';return false}}
+async function loadBinders(){try{const d=JSON.parse(new TextDecoder().decode(await piDec(await piFile('d.bin'))));BINDERS=d.binders.map(b=>({id:b.id,name:b.name,kind:b.kind}))}catch(e){}
+  const sel=$('binder'),keep=LS.get('pi-binder',null);sel.innerHTML='';
+  if(!BINDERS.length){const o=document.createElement('option');o.textContent='Sin binders';o.value='';sel.appendChild(o)}
+  BINDERS.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=b.name+(b.kind==='ventas'?' (ventas)':'');sel.appendChild(o)});
+  if(keep&&BINDERS.some(b=>b.id===keep))sel.value=keep;$('dest').value=LS.get('pi-dest','tray');drawStatus()}
+$('binder').onchange=()=>{LS.set('pi-binder',$('binder').value);drawStatus()};$('dest').onchange=()=>LS.set('pi-dest',$('dest').value);
+let STATUS='obtenida';
+function drawStatus(){const b=BINDERS.find(x=>x.id===$('binder').value),v=b&&b.kind==='ventas';
+  const opts=v?[['no-comprada','En venta'],['comprada','Vendida']]:[['obtenida','La tengo'],['comprada','Comprada'],['no-comprada','Me falta']];
+  if(!opts.some(o=>o[0]===STATUS))STATUS=opts[0][0];const s=$('status');s.innerHTML='';
+  opts.forEach(([k,t])=>{const x=document.createElement('button');x.type='button';x.textContent=t;x.className=k===STATUS?'on':'';x.onclick=()=>{STATUS=k;drawStatus()};s.appendChild(x)})}
+
+/* ---------- foto y recuadro ---------- */
+let IMG=null,BOX=LS.get('pi-box',{x:.02,y:.86,w:.5,h:.11});
+$('shot').onclick=()=>$('fCam').click();$('gal').onclick=()=>$('fGal').click();
+$('fCam').onchange=$('fGal').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)loadPhoto(f)};
+$('again').onclick=()=>$('fCam').click();
+async function loadPhoto(f){const bmp=await createImageBitmap(f,{imageOrientation:'from-image'}).catch(()=>null);
+  let im=bmp;if(!im){im=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=URL.createObjectURL(f)})}
+  const W=im.width,H=im.height,s=Math.min(1,2400/Math.max(W,H));const c=document.createElement('canvas');c.width=Math.round(W*s);c.height=Math.round(H*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);IMG=c;
+  const cv=$('cv');cv.width=Math.min(900,c.width);cv.height=Math.round(cv.width*c.height/c.width);cv.getContext('2d').drawImage(c,0,0,cv.width,cv.height);
+  $('photo').hidden=false;$('start').hidden=true;$('result').hidden=true;$('sendBar').hidden=true;placeBox();readCode()}
+function placeBox(){const b=$('box');b.style.left=BOX.x*100+'%';b.style.top=BOX.y*100+'%';b.style.width=BOX.w*100+'%';b.style.height=BOX.h*100+'%';drawZoom()}
+function drawZoom(){if(!IMG)return;const zv=$('zv'),sx=BOX.x*IMG.width,sy=BOX.y*IMG.height,sw=BOX.w*IMG.width,sh=BOX.h*IMG.height;zv.width=900;zv.height=Math.max(40,Math.round(900*sh/sw));zv.getContext('2d').drawImage(IMG,sx,sy,sw,sh,0,0,zv.width,zv.height)}
+{let d=null;const st=$('stage'),b=$('box');
+  b.addEventListener('pointerdown',e=>{const r=st.getBoundingClientRect();d={mode:e.target.tagName==='I'?'size':'move',x:e.clientX,y:e.clientY,b:{...BOX},W:r.width,H:r.height};b.setPointerCapture(e.pointerId);e.preventDefault()});
+  b.addEventListener('pointermove',e=>{if(!d)return;const dx=(e.clientX-d.x)/d.W,dy=(e.clientY-d.y)/d.H;
+    if(d.mode==='move'){BOX.x=Math.min(1-BOX.w,Math.max(0,d.b.x+dx));BOX.y=Math.min(1-BOX.h,Math.max(0,d.b.y+dy))}
+    else{BOX.w=Math.min(1-BOX.x,Math.max(.12,d.b.w+dx));BOX.h=Math.min(1-BOX.y,Math.max(.03,d.b.h+dy))}placeBox()});
+  const up=()=>{if(d){d=null;LS.set('pi-box',BOX)}};b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up)}
+
+/* ---------- OCR: el PC lee el recorte en varias versiones (claro / oscuro) ---------- */
+function variants(){const sx=BOX.x*IMG.width,sy=BOX.y*IMG.height,sw=BOX.w*IMG.width,sh=BOX.h*IMG.height;const W=1100,H=Math.max(30,Math.round(W*sh/sw));
+  const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d',{willReadFrequently:true});x.imageSmoothingQuality='high';x.drawImage(IMG,sx,sy,sw,sh,0,0,W,H);
+  const d=x.getImageData(0,0,W,H),p=d.data,g=new Uint8ClampedArray(W*H);const hist=new Array(256).fill(0);
+  for(let i=0;i<W*H;i++){const v=Math.round(.299*p[i*4]+.587*p[i*4+1]+.114*p[i*4+2]);g[i]=v;hist[v]++}
+  let lo=0,hi=255,acc=0;for(let v=0;v<256;v++){acc+=hist[v];if(acc>W*H*.01){lo=v;break}}acc=0;for(let v=255;v>=0;v--){acc+=hist[v];if(acc>W*H*.01){hi=v;break}}
+  const k=255/Math.max(1,hi-lo);for(let i=0;i<g.length;i++)g[i]=Math.max(0,Math.min(255,(g[i]-lo)*k));
+  const make=f=>{const o=x.createImageData(W,H);for(let i=0;i<g.length;i++){const v=f(g[i]);o.data[i*4]=o.data[i*4+1]=o.data[i*4+2]=v;o.data[i*4+3]=255}x.putImageData(o,0,0);return c.toDataURL('image/png')};
+  return[make(v=>v),make(v=>v>60?255:0),make(v=>v>95?255:0),make(v=>v>130?255:0),make(v=>v>200?0:255),make(v=>v>160?0:255)]}
+let SCAN={nums:[],codes:[]};
+async function readCode(){const b=$('read');b.disabled=true;b.innerHTML='<span class="spin"></span> Leyendo…';
+  try{if(!OCRW)b.innerHTML='<span class="spin"></span> Preparando el lector (solo la 1.ª vez)…';const texts=await ocrLocal(variants());b.innerHTML='<span class="spin"></span> Buscando…';
+    SCAN=parse(texts);showResult();await find()}
+  catch(e){toast('No se pudo leer: '+(e.message||e),'err')}finally{b.disabled=false;b.textContent='Leer código'}}
+$('read').onclick=readCode;
+function parse(texts){const nums={},codes={};const all=texts.join('\n');
+  for(const m of all.matchAll(/([A-Z]{0,2}\d{1,3})\s?\/\s?((?:[A-Z]{1,3}-?P)|[A-Z]{0,2}\d{2,3})/gi)){const k=(m[1]+'/'+m[2]).toUpperCase();nums[k]=(nums[k]||0)+1}
+  for(const m of all.matchAll(/(?:^|[^A-Za-z0-9])([A-Za-z]{1,3}\d{1,2}[A-Za-z]{0,2}|[A-Z]{2,3}-P|[A-Z]{3})(?=$|[^A-Za-z0-9])/g)){const t=m[1];if(/^\d/.test(t))continue;codes[t]=(codes[t]||0)+1}
+  const top=o=>Object.entries(o).sort((a,b)=>b[1]-a[1]).map(e=>e[0]);return{nums:top(nums),codes:top(codes)}}
+function showResult(){$('result').hidden=false;$('sendBar').hidden=false;const ch=$('chips');ch.innerHTML='';
+  const n=SCAN.nums[0]||'',c=pickCode();$('num').value=n;$('code').value=c||'';
+  if(/^[A-Z]{3}$/.test(c||''))$('lang').value='en';
+  const add=(t,ok)=>{const s=document.createElement('span');s.className='chip'+(ok?' ok':'');s.textContent=t;ch.appendChild(s)};
+  add(n?'Número: '+n:'Número: no leído',!!n);add(c?'Código: '+c:'Código: no leído',!!c);
+  if(!n&&!c)toast('No he podido leer el código. Ajusta el recuadro o escríbelo a mano.','err')}
+let SETS={};
+async function sets(lang){if(!SETS[lang])SETS[lang]=getJ(`https://api.tcgdex.net/v2/${lang}/sets`).catch(e=>{SETS[lang]=null;throw e});return SETS[lang]}
+const DET={};const setDet=(lang,id)=>DET[lang+id]||(DET[lang+id]=getJ(`https://api.tcgdex.net/v2/${lang}/sets/${encodeURIComponent(id)}`).catch(()=>null));
+function pickCode(){const ids=(SETS._jaIds||[]);const c=SCAN.codes.find(x=>ids.includes(x.toLowerCase()));return c||SCAN.codes.find(x=>/\d/.test(x))||SCAN.codes[0]||''}
+const lev=(a,b)=>{a=a.toLowerCase();b=b.toLowerCase();const m=[...Array(b.length+1).keys()];for(let i=1;i<=a.length;i++){let p=m[0];m[0]=i;for(let j=1;j<=b.length;j++){const t=m[j];m[j]=Math.min(m[j]+1,m[j-1]+1,p+(a[i-1]===b[j-1]?0:1));p=t}}return m[b.length]};
+const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9+]/g,'');
+async function search(lang,num,total,code){const L=await sets(lang);if(lang==='ja')SETS._jaIds=L.map(s=>s.id.toLowerCase());
+  const scored=L.map(s=>{let sc=0;const off=s.cardCount&&s.cardCount.official;
+    if(/^\d+$/.test(total)){const t=+total;if(off===t)sc+=4;else if(off&&Math.abs(off-t)<=1)sc+=1}
+    else if(total&&norm(total)===norm(s.id))sc+=8;
+    if(code){const d=lev(norm(code),norm(s.id));if(d===0)sc+=7;else if(d===1&&norm(code).length>2)sc+=2}
+    return{s,sc}}).filter(x=>x.sc>0).sort((a,b)=>b.sc-a.sc).slice(0,8);
+  const out=[];await Promise.all(scored.map(async({s,sc})=>{const d=await setDet(lang,s.id);if(!d||!d.cards)return;let bonus=0;
+    if(code&&d.abbreviation&&norm(d.abbreviation.official)===norm(code))bonus=7;
+    const N=String(num).toUpperCase(),eq=c=>String(c.localId).toUpperCase()===N||(/^\d+$/.test(N)&&/^\d+$/.test(c.localId)&&+c.localId===+N);
+    const push=(c,extra)=>out.push({lang,setId:s.id,setName:s.name,abbr:d.abbreviation&&d.abbreviation.official,id:c.id,localId:c.localId,name:c.name,image:c.image,score:sc+bonus+extra});
+    const ex=d.cards.find(eq);if(ex)push(ex,10);
+    else d.cards.forEach(c=>{const L=String(c.localId).replace(/^0+/,''),n=N.replace(/^0+/,'');if(L&&n&&(L.endsWith(n)&&L.length===n.length+1||(L.length===n.length&&lev(L,n)===1)))push(c,0)})}));
+  return out.sort((a,b)=>b.score-a.score)}
+let CANDS=[],SEL=null;
+async function find(){const raw=$('num').value.trim().toUpperCase(),m=/^([A-Z]{0,2}\d{1,3})\s*(?:\/\s*([A-Z0-9-]+))?$/.exec(raw),code=$('code').value.trim();
+  $('cands').innerHTML='';$('nores').hidden=true;SEL=null;CANDS=[];
+  if(!m){if(raw||code)toast('Escribe el número como aparece en la carta, p. ej. 189/184','err');showNoRes();return}
+  const b=$('find');b.disabled=true;b.innerHTML='<span class="spin" style="border-top-color:#fff"></span> Buscando…';
+  try{const first=$('lang').value,langs=[first,first==='ja'?'en':'ja'];
+    for(const l of langs){CANDS=await search(l,m[1],m[2]||'',code);if(CANDS.length)break}
+    if(!CANDS.length){showNoRes();return}
+    CANDS.slice(0,9).forEach((c,i)=>{const d=document.createElement('button');d.type='button';d.className='cand';
+      const im=document.createElement('img');im.loading='lazy';im.src=c.image?c.image+'/low.webp':'';im.alt='';d.append(im,document.createTextNode(`${c.setId} · ${c.localId}`));d.onclick=()=>choose(i);$('cands').appendChild(d)});
+    await choose(0)}
+  catch(e){toast('No puedo consultar TCGdex desde el PC: '+(e.message||e),'err');showNoRes()}
+  finally{b.disabled=false;b.textContent='Buscar la carta'}}
+$('find').onclick=find;
+function showNoRes(){$('nores').hidden=false;if(!$('name').value){const c=$('code').value.trim(),n=($('num').value.split('/')[0]||'').trim();$('name').value=c||n?`(${[c,n].filter(Boolean).join(' ')})`:''}$('jaName').textContent=''}
+
+/* ---------- nombre en inglés: «Mewtwo ex (30C 157)» ---------- */
+let SP=null;
+async function species(){if(SP)return SP;const c=LS.get('pi-species',null);if(c&&c.v===1&&c.map){SP=c.map;return SP}
+  const q='{n:pokemon_v2_pokemonspeciesname(where:{language_id:{_in:[1,9,11]}}){name language_id pokemon_species_id}}';
+  const r=await fetch('https://beta.pokeapi.co/graphql/v1beta',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({query:q})});const j=await r.json();
+  const en={},map={};(j.data&&j.data.n||[]).forEach(x=>{if(x.language_id===9)en[x.pokemon_species_id]=x.name});(j.data&&j.data.n||[]).forEach(x=>{if(x.language_id!==9&&en[x.pokemon_species_id])map[x.name]=en[x.pokemon_species_id]});
+  SP=map;LS.set('pi-species',{v:1,map});return SP}
+const PRE=[['ロケット団の',"Team Rocket's "],['メガ','Mega '],['かがやく','Radiant '],['ヒスイ','Hisuian '],['アローラ','Alolan '],['ガラル','Galarian '],['パルデア','Paldean '],['ひかる','Shining '],['ダーク','Dark '],['あくの','Dark ']];
+const SUF=/(ex|EX|GX|VMAX|VSTAR|V-UNION|V|BREAK|LEGEND|δ|☆|◇)$/;
+async function toEn(ja){let s=String(ja||'').trim();if(!s||!/[぀-ヿ一-鿿]/.test(s))return s;let map={};try{map=await species()}catch(e){}
+  let suf='';const m=SUF.exec(s);if(m){suf=m[1];s=s.slice(0,-suf.length).trim()}
+  let pre='';for(const[k,v]of PRE){if(!s.startsWith(k))continue;const r=s.slice(k.length);if(map[r]||map[r.replace(/[XY]$/,'')]||k==='ロケット団の'){pre=v;s=r;break}}
+  let form='';if(!map[s]&&/[XY]$/.test(s)&&map[s.slice(0,-1)]){form=' '+s.slice(-1);s=s.slice(0,-1)}
+  let owner='';if(!map[s]&&s.includes('の')){const i=s.lastIndexOf('の');owner=s.slice(0,i);s=s.slice(i+1)}
+  if(!map[s])return null;
+  const sfx=suf?(suf==='EX'?' ex':' '+suf):'';return(pre+map[s]+form+sfx).replace(/\s+/g,' ').trim()+(owner?' de '+owner:'')}
+async function choose(i){const c=CANDS[i];if(!c)return;SEL=c;[...$('cands').children].forEach((x,k)=>x.classList.toggle('on',k===i));$('nores').hidden=true;
+  $('lang').value=c.lang;let nm=c.name;if(c.lang==='ja'){const e=await toEn(c.name);if(e)nm=e}
+  const printed=c.lang==='en'?(c.abbr||c.setId):(/-P$/i.test(c.setId)?c.setId:c.setId.replace(/^[A-Z]+(?=\d)/,m=>m.toLowerCase()));$('code').value=printed;
+  $('name').value=`${nm} (${printed} ${c.localId})`;$('jaName').textContent=c.lang==='ja'?`TCGdex: ${c.name} · ${c.setName}`:`TCGdex: ${c.setName}`}
+
+/* ---------- imagen alternativa desde Google ---------- */
+$('google').onclick=()=>{const q=($('name').value||'').replace(/[()]/g,' ')+' pokemon card';window.open('https://www.google.com/search?tbm=isch&q='+encodeURIComponent(q.trim()),'_blank')};
+$('imgUrl').oninput=()=>{const u=$('imgUrl').value.trim(),p=$('prev');if(/^https?:\/\//.test(u)){p.src=u;p.style.display='block'}else p.style.display='none'};
+
+/* ---------- enviar ---------- */
+$('send').onclick=async()=>{const name=$('name').value.trim();if(!name){toast('Escribe el nombre de la carta.','err');$('name').focus();return}
+  const binderId=$('binder').value;if(!binderId){toast('Elige el binder.','err');return}if(!GH){toast('Vuelve a publicar desde el PC (botón «Publicar ahora») y recarga esta página.','err');return}
+  const nm=/^([A-Z]{0,2}\d{1,3})/.exec($('num').value.trim().toUpperCase());
+  const item={binderId,dest:$('dest').value,name,status:STATUS,pricePurchase:$('buy').value===''?null:Number($('buy').value.replace(',','.')),
+    code:$('code').value.trim(),number:nm?nm[1]:'',lang:$('lang').value};
+  if(SEL){Object.assign(item,{tcgdexId:SEL.id,lang:SEL.lang,set:SEL.setId,number:SEL.localId,img:SEL.image?SEL.image+'/low.webp':'',imgL:SEL.image?SEL.image+'/high.webp':''})}
+  else{const u=$('imgUrl').value.trim();if(/^https?:\/\//.test(u))item.imgUrl=u}
+  const b=$('send');b.disabled=true;b.innerHTML='<span class="spin"></span> Enviando…';
+  try{item.at=Date.now();const enc=await piEnc(new TextEncoder().encode(JSON.stringify(item)));const path='inbox/'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)+'.bin';
+    const r=await fetch(`https://api.github.com/repos/${GH.login}/${GH.repo}/contents/${path}`,{method:'PUT',headers:{Authorization:'Bearer '+GH.token,Accept:'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify({message:'Carta escaneada',content:b64e(enc),branch:GH.branch})});
+    if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(j.message||r.status)}
+    const bn=(BINDERS.find(x=>x.id===binderId)||{}).name||'';toast(`✓ «${name}» enviada a ${bn}. Llegará al abrir PokeIndex en el PC.`,'ok');resetAll()}
+  catch(e){toast('No se pudo enviar: '+(e.message||e),'err')}finally{b.disabled=false;b.textContent='Enviar'}};
+function resetAll(){IMG=null;SEL=null;CANDS=[];['name','buy','imgUrl','code','num'].forEach(id=>$(id).value='');$('prev').style.display='none';$('jaName').textContent='';
+  $('photo').hidden=true;$('result').hidden=true;$('sendBar').hidden=true;$('start').hidden=false;window.scrollTo(0,0)}
+
+ping().then(ok=>{if(ok)loadBinders()});
+sets('ja').then(L=>{SETS._jaIds=L.map(s=>s.id.toLowerCase())}).catch(()=>{});species().catch(()=>{});
+</script></body></html>
