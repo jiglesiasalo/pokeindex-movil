@@ -37,6 +37,13 @@ main{padding:0 var(--pad)}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
 .kpi span{display:block;font-size:10.5px;letter-spacing:.14em;color:var(--mute);font-weight:800}
 .kpi b{font-size:19px;font-weight:800}.kpi.pos b{color:var(--ok)}.kpi.neg b,.kpi.miss b{color:var(--miss)}
+.ksel{position:relative;display:flex;justify-content:flex-end;margin:-6px 0 8px}
+.ksel-b{display:inline-flex;align-items:center;gap:6px;max-width:100%;height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-weight:700;font-size:12.5px}
+.ksel-b span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ksel-b i{font-style:normal;color:var(--y)}
+.ksel-p{position:absolute;right:0;top:38px;z-index:25;min-width:240px;max-width:100%;padding:8px;border-radius:14px;background:#17181d;border:1px solid #33343b;box-shadow:0 18px 40px rgba(0,0,0,.6)}
+.ksel-p label{display:flex;align-items:center;gap:10px;padding:11px 10px;border-radius:10px;font-weight:700}
+.ksel-p input{width:20px;height:20px;accent-color:var(--y)}.ksel-p small{margin-left:auto;color:var(--mute);font-weight:600}
+.ksel-a{display:flex;gap:6px;border-top:1px solid var(--line);margin-top:4px;padding-top:8px}.ksel-a button{flex:1;height:36px;border-radius:10px;border:1px solid #33343b;background:none;font-weight:700;font-size:13px}
 .kpi.wide{grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline}
 .sec{font-size:11px;letter-spacing:.16em;color:var(--mute);font-weight:800;margin:18px 2px 8px}
 .list{display:flex;flex-direction:column;gap:8px}
@@ -175,10 +182,21 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{if(b.dataset.t
 addEventListener('popstate',()=>{});
 const when=iso=>{const d=new Date(iso);return d.toLocaleDateString('es-ES',{day:'numeric',month:'short'})+' · '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})};
 function home(v){setHead('Mis binders','Guardado en el PC el '+when(D.at));
-  const col=D.binders.filter(b=>b.kind!=='ventas');let T={n:0,g:0,v:0,miss:0,inv:0,pf:0};col.forEach(b=>{const s=stats(b);for(const k in T)T[k]+=s[k]});
+  const KS='pi-movil-kpi';let sel=null;try{sel=JSON.parse(localStorage.getItem(KS)||'null')}catch(e){}
+  if(!Array.isArray(sel))sel=D.binders.filter(b=>b.kind!=='ventas').map(b=>b.id);sel=sel.filter(id=>D.binders.some(b=>b.id===id));
+  const col=D.binders.filter(b=>sel.includes(b.id));let T={n:0,g:0,v:0,miss:0,inv:0,pf:0};col.forEach(b=>{const s=stats(b);for(const k in T)T[k]+=s[k]});
   const k=el('div','kpis');const kp=(l,val,c)=>{const d=el('div','kpi'+(c?' '+c:''));d.append(el('span',null,l),el('b',null,val));k.appendChild(d);return d};
   kp('INVERSIÓN',eur(T.inv));kp('PROFIT',(T.pf>=0?'+':'')+eur(T.pf),T.pf<0?'neg':'pos');kp('COLECCIÓN',eur(T.v));kp('PARA COMPLETAR',eur(T.miss),'miss');
   const w=kp('CARTAS',T.g+' / '+T.n,'wide');v.appendChild(k);
+  {const names=col.map(b=>b.name);const box=el('div','ksel');const bt=el('button','ksel-b');bt.type='button';
+    bt.append(el('span',null,!names.length?'Ningún binder':names.length===D.binders.length?'Todos los binders':names.join(' + ')),el('i',null,'▾'));box.appendChild(bt);
+    const pop=el('div','ksel-p hide');D.binders.forEach(b=>{const lb=el('label');const cb=el('input');cb.type='checkbox';cb.checked=sel.includes(b.id);
+      cb.onchange=()=>{const ids=D.binders.filter((x,i)=>pop.querySelectorAll('input')[i].checked).map(x=>x.id);try{localStorage.setItem(KS,JSON.stringify(ids))}catch(e){}window.__kpo=true;render()};
+      lb.append(cb,el('span',null,b.name),el('small',null,b.kind==='ventas'?'ventas':eur(stats(b).v)));pop.appendChild(lb)});
+    const al=el('div','ksel-a');const set=ids=>{try{localStorage.setItem(KS,JSON.stringify(ids))}catch(e){}window.__kpo=true;render()};
+    const t=el('button',null,'Todos');t.type='button';t.onclick=()=>set(D.binders.map(b=>b.id));const nv=el('button',null,'Sin ventas');nv.type='button';nv.onclick=()=>set(D.binders.filter(b=>b.kind!=='ventas').map(b=>b.id));
+    al.append(t,nv);pop.appendChild(al);box.appendChild(pop);bt.onclick=()=>pop.classList.toggle('hide');if(window.__kpo){window.__kpo=false;pop.classList.remove('hide')}
+    v.appendChild(box)}
   v.appendChild(el('div','sec','BINDERS'));const L=el('div','list');
   D.binders.forEach(b=>{const s=stats(b),r=el('button','row');const ic=el('img','ic');ic.alt='';const src=IMG['ic:'+b.id];if(src)ic.src=src;
     const tx=el('div','tx');tx.append(el('b',null,b.name));
