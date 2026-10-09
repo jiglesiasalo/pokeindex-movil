@@ -157,6 +157,20 @@ header{flex-wrap:wrap}
 .shelf-cap{display:flex;justify-content:space-between;gap:6px;align-items:baseline;margin-top:4px}.shelf-cap b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.shelf-cap span{font-weight:800;font-size:13px;white-space:nowrap}
 .shelf-it small{color:var(--mute);font-size:11.5px}
 /* abrir el binder */
+.ob-ov{position:fixed;inset:0;z-index:90;pointer-events:none;perspective:1400px}
+.ob-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,rgba(30,30,36,.92),rgba(8,8,10,.98) 70%);opacity:0}
+.ob-book{position:absolute;transform-origin:0 0;transform-style:preserve-3d;will-change:transform}
+.ob-in{position:absolute;inset:0;border-radius:6px 14px 14px 6px;overflow:hidden;background:linear-gradient(90deg,#0d0d10,#1b1b20 8%,#18181c);box-shadow:0 24px 50px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.06)}
+.ob-grid{position:absolute;inset:7% 7% 7% 9%;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:5%}
+.ob-s{position:relative;border-radius:3px;background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);overflow:hidden}
+.ob-s img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ob-s.miss img{opacity:.35;filter:grayscale(.7)}
+.ob-s::after{content:"";position:absolute;inset:0;background:linear-gradient(125deg,rgba(255,255,255,.18),transparent 40%)}
+.ob-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.9),rgba(0,0,0,.55));opacity:.85}
+.ob-flap{position:absolute;inset:0;transform-origin:0 50%;transform-style:preserve-3d}
+.ob-flap>.cov,.ob-lin{position:absolute!important;inset:0;width:auto!important;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.ob-lin{transform:rotateY(180deg);border-radius:14px 6px 6px 14px;background:radial-gradient(ellipse at 60% 40%,color-mix(in srgb,var(--fc) 40%,#1c1c22),#0e0e12 80%);box-shadow:inset -8px 0 14px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.06)}
+.ob-lin::before{content:"";position:absolute;inset:8% 9% 8% 7%;border:1px dashed rgba(255,235,190,.18);border-radius:10px 4px 4px 10px}
 .cov-fly{position:fixed;z-index:80;transform-origin:0 0;perspective:1000px}
 .cov-fly>.cov{position:absolute;inset:0;transform-origin:0 50%;backface-visibility:hidden}
 .cov-pages{position:absolute;inset:1% 1% 1% 3%;border-radius:4px 12px 12px 4px;background:repeating-linear-gradient(90deg,#f0eee8 0 1px,#d8d4ca 1px 2px);box-shadow:0 14px 26px rgba(0,0,0,.5)}
@@ -460,13 +474,31 @@ const _home=home;home=function(v){_home(v);partsRun('motas','#ffcb05');
     it.append(cv,cap,sm,bar);it.onclick=()=>openBinder(cv,b);shelf.appendChild(it)});
   list.replaceWith(shelf)};
 /* abrir el binder: la portada sale de su sitio, crece y se abre como un libro */
-function openBinder(cv,b){if(REDUCED){go(x=>binder(x,b));return}const r=cv.getBoundingClientRect();
-  const fly=el('div','cov-fly');Object.assign(fly.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px'});
-  const front=coverEl(b);fly.append(el('div','cov-pages'),front);document.body.appendChild(fly);cv.style.visibility='hidden';
-  const W=Math.min(innerWidth*.6,300),sc=W/r.width,H=r.height*sc,dx=innerWidth/2-W/2-r.left,dy=innerHeight/2-H/2-r.top;
-  fly.animate([{transform:'none'},{transform:`translate(${dx}px,${dy}px) scale(${sc})`}],{duration:380,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'}).onfinish=()=>{
-    front.animate([{transform:'rotateY(0)'},{transform:'rotateY(-165deg)'}],{duration:560,easing:'cubic-bezier(.45,.05,.3,1)',fill:'forwards'}).onfinish=()=>{
-      go(x=>binder(x,b));fly.animate([{opacity:1},{opacity:0}],{duration:200,fill:'forwards'}).onfinish=()=>{fly.remove();cv.style.visibility=''}}}}
+function openBinder(cv,b){if(REDUCED){go(x=>binder(x,b));return}if(document.querySelector('.ob-ov'))return;
+  const r=cv.getBoundingClientRect(),ease='cubic-bezier(.22,.9,.24,1)';if(navigator.vibrate)navigator.vibrate(8);
+  const ov=el('div','ob-ov'),bg=el('i','ob-bg'),book=el('div','ob-book');
+  /* interior: la primera hoja con sus cartas, en oscuro (nada de papel blanco) */
+  const inn=el('div','ob-in');const g=el('div','ob-grid');const pg=(b.pages[1]||[]).slice(0,9);
+  for(let k=0;k<9;k++){const c=pg[k],s=el('i','ob-s');if(c){const u=imgOf(c);if(u){const im=el('img');im.alt='';im.decoding='async';im.src=u;s.appendChild(im)}if(c.st==='no-comprada')s.classList.add('miss')}g.appendChild(s)}
+  inn.append(g,el('i','ob-shade'));
+  const flap=el('div','ob-flap');const front=coverEl(b);front.classList.add('ob-front');const lin=el('div','ob-lin');lin.style.setProperty('--fc',b.fc||'#2f6fd0');flap.append(front,lin);
+  book.append(inn,flap);ov.append(bg,book);document.body.appendChild(ov);cv.style.visibility='hidden';
+  const W=Math.min(innerWidth*.46,230),sc=W/r.width,H=r.height*sc,cx=innerWidth/2,cy=innerHeight*.47;
+  Object.assign(book.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px'});
+  const to=(x,y,s2,ex='')=>`translate(${x-r.left}px,${y-r.top}px) scale(${s2})${ex}`;
+  bg.animate([{opacity:0},{opacity:1}],{duration:420,easing:'ease-out',fill:'forwards'});
+  /* 1 · sale de la estantería y se coloca en el centro */
+  const a1=book.animate([{transform:'none',offset:0},{transform:to(cx-W/2,cy-H/2-14,sc*.98,' rotateX(10deg) rotateY(-14deg)'),offset:.7},{transform:to(cx-W/2,cy-H/2,sc,' rotateX(0) rotateY(0)')}],{duration:520,easing:ease,fill:'forwards'});
+  a1.onfinish=()=>{
+    /* 2 · se abre la tapa y el libro se desplaza para centrar la doble página */
+    book.animate([{transform:to(cx-W/2,cy-H/2,sc)},{transform:to(cx,cy-H/2,sc)}],{duration:640,easing:'cubic-bezier(.5,0,.25,1)',fill:'forwards'});
+    const a2=flap.animate([{transform:'rotateY(0deg)'},{transform:'rotateY(-180deg)'}],{duration:640,easing:'cubic-bezier(.5,0,.25,1)',fill:'forwards'});
+    inn.querySelector('.ob-shade').animate([{opacity:.85},{opacity:0}],{duration:640,easing:'ease-out',fill:'forwards'});
+    a2.onfinish=()=>{go(x=>binder(x,b));cv.style.visibility='';
+      /* 3 · se acerca y se funde con la vista del binder */
+      const out=ov.animate([{opacity:1},{opacity:0}],{duration:340,easing:'ease-in',fill:'forwards'});
+      book.animate([{transform:to(cx,cy-H/2,sc)},{transform:to(cx-W*.1,cy-H/2-H*.04,sc*1.12)}],{duration:340,easing:'ease-in',fill:'forwards'});
+      out.onfinish=()=>ov.remove()}}}
 /* ---- lista de dobles páginas con la portada arriba ---- */
 const _binder=binder;binder=function(v,b){_binder(v,b);const hd=el('div','bhead');const cv=coverEl(b);cv.classList.add('small');hd.append(cv);
   const s=stats(b),t=el('div','bhead-t');t.append(el('b',null,eur(s.v)),el('small',null,`${s.g} de ${s.n} cartas`));hd.appendChild(t);v.prepend(hd);partsRun('motas',b.fc||'#ffcb05')};
