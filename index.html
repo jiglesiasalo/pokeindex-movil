@@ -263,6 +263,20 @@ header{flex-wrap:wrap}
 .share{background:var(--y)!important;color:#1a1500!important;border:0!important;width:100%;font:inherit;font-weight:800}
 .btn.bio{background:#1d1e24;color:var(--y);border:1px solid var(--y)}
 @media(prefers-reduced-motion:reduce){.tf-spk i{animation:none}}
+/* v121 · zoom estable: sin vuelta completa; cara plana para que los brillos se mezclen bien con la foto */
+.tc3 .tc{transform-style:flat!important}
+.tc3 .tl,.tc3 .tb{display:none!important}
+.tc3 .tf{transform:none!important;backface-visibility:visible!important;-webkit-backface-visibility:visible!important;isolation:isolate}
+.tc3 .tc-refl{display:none!important}
+.tc3[data-ht="oro"] .tf-holo{mix-blend-mode:soft-light!important;opacity:calc(.35 + var(--o,0)*.65)!important;background:linear-gradient(115deg,rgba(120,80,10,.0) 20%,rgba(255,236,160,.95) 42%,rgba(214,160,40,.9) 50%,rgba(255,244,190,.95) 58%,rgba(120,80,10,0) 80%)!important;background-size:250% 250%!important;background-position:var(--x) var(--y)!important}
+.tc3[data-ht="oro"] .tf-holo2{mix-blend-mode:overlay!important;opacity:calc(.12 + var(--o,0)*.35)!important;background:radial-gradient(circle at var(--x,50%) var(--y,50%),rgba(255,240,190,.9),transparent 45%),repeating-linear-gradient(90deg,rgba(255,226,140,.35) 0 1px,transparent 1px 3px)!important;clip-path:none!important}
+.tc3[data-ht="arcoiris"] .tf-holo{mix-blend-mode:soft-light!important;opacity:calc(.4 + var(--o,0)*.5)!important;background:linear-gradient(125deg,hsl(0 95% 60%),hsl(40 100% 58%),hsl(100 85% 52%),hsl(185 95% 55%),hsl(240 90% 66%),hsl(300 90% 62%),hsl(360 95% 60%),hsl(40 100% 58%),hsl(100 85% 52%))!important;background-size:260% 260%!important;background-position:var(--x) var(--y)!important}
+.tc3[data-ht="arcoiris"] .tf-holo2{display:block;mix-blend-mode:overlay;opacity:calc(var(--o,0)*.55);background:radial-gradient(circle at var(--x,50%) var(--y,50%),rgba(255,255,255,.85),transparent 42%);clip-path:none!important}
+.tc3 .tf-spk{contain:strict}
+.tc3 .tf-spk i{mix-blend-mode:normal!important;will-change:opacity,transform;width:11px;margin:-5.5px 0 0 -5.5px}
+.tc3[data-ht="arcoiris"] .tf-spk i{filter:hue-rotate(calc(var(--k,0)*1deg))}
+.tc3.zoomed .tf-spk{display:none}
+
 </style></head>
 <body>
 <div id="lock">
@@ -549,7 +563,7 @@ function tiltCard(c){const w=el('div','tc3');w.dataset.ht=c.ht||'none';const car
   const ab=c.ab||null;if(ab){front.style.setProperty('--ax',ab[0]*100+'%');front.style.setProperty('--ay',ab[1]*100+'%');front.style.setProperty('--ax2',(1-ab[2])*100+'%');front.style.setProperty('--ay2',(1-ab[3])*100+'%')}
   const par=el('div','tf-par'+(ab?'':' full'));const pim=el('img');pim.alt='';pim.src=im.src;pim.draggable=false;par.appendChild(pim);front.appendChild(par);
   front.append(el('i','tf-holo'),el('i','tf-holo2'),el('i','tf-glare'));
-  if(c.ht==='oro'||c.ht==='arcoiris'){const sp=el('span','tf-spk');for(let k=0;k<14;k++){const s=el('i');s.style.left=(6+Math.random()*88)+'%';s.style.top=(5+Math.random()*90)+'%';s.style.animationDelay=(Math.random()*3)+'s';s.style.animationDuration=(1.6+Math.random()*2)+'s';sp.appendChild(s)}front.appendChild(sp)}
+  if(c.ht==='oro'||c.ht==='arcoiris'){const sp=el('span','tf-spk');for(let k=0;k<8;k++){const s=el('i');s.style.left=(6+Math.random()*88)+'%';s.style.top=(5+Math.random()*90)+'%';s.style.animationDelay=(Math.random()*3)+'s';s.style.animationDuration=(1.6+Math.random()*2)+'s';sp.appendChild(s)}front.appendChild(sp)}
   for(let k=1;k<=6;k++){const l=el('i','tl');l.style.setProperty('--k',k);card.appendChild(l)}
   const back=el('div','tb');card.append(front,back);w.appendChild(card);
   const sh=el('i','tc-shadow'),rf=el('div','tc-refl');const rim=el('img');rim.alt='';rim.src=im.src;rf.appendChild(rim);w.append(sh,rf);
@@ -558,8 +572,8 @@ function tiltCard(c){const w=el('div','tc3');w.dataset.ht=c.ht||'none';const car
   const apply=(o)=>{card.style.transform=`rotateX(${rx.toFixed(2)}deg) rotateY(${(base+ry).toFixed(2)}deg)`;
     const nx=.5+Math.sin((base+ry)*Math.PI/180)*.5,ny=.5-rx/50;w.style.setProperty('--x',(nx*100).toFixed(1)+'%');w.style.setProperty('--y',(ny*100).toFixed(1)+'%');
     w.style.setProperty('--px',(-ry*.35).toFixed(2)+'px');w.style.setProperty('--py',(rx*.35).toFixed(2)+'px');if(o!==undefined)w.style.setProperty('--o',o);
-    sh.style.transform=`translateX(${(-ry*1.2).toFixed(1)}px) scaleX(${(1-Math.abs(ry)/220).toFixed(3)})`;rf.style.transform=`rotateY(${(base+ry).toFixed(2)}deg)`;
-    {const an=((base+ry)%360+360)%360;w.classList.toggle('flipped',an>90&&an<270)}w.style.setProperty('--zz',zoom);w.style.setProperty('--tx',panx+'px');w.style.setProperty('--ty',pany+'px')};
+    sh.style.transform=`translateX(${(-ry*1.2).toFixed(1)}px) scaleX(${(1-Math.abs(ry)/220).toFixed(3)})`;
+    w.style.setProperty('--zz',zoom);w.style.setProperty('--tx',panx+'px');w.style.setProperty('--ty',pany+'px')};
   w.addEventListener('pointerdown',e=>{pts.set(e.pointerId,{x:e.clientX,y:e.clientY});w.setPointerCapture(e.pointerId);w._moved=false;
     if(pts.size===2){const [a,b]=[...pts.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),z:zoom};drag=null;return}
     drag={x:e.clientX,y:e.clientY,ry:ry,rx:rx,px:panx,py:pany};card.style.transition='none'});
@@ -567,9 +581,9 @@ function tiltCard(c){const w=el('div','tc3');w.dataset.ht=c.ht||'none';const car
     if(pinch&&pts.size>=2){const [a,b]=[...pts.values()];zoom=Math.max(1,Math.min(4,pinch.z*Math.hypot(a.x-b.x,a.y-b.y)/pinch.d));w._moved=true;w.classList.toggle('zoomed',zoom>1.03);apply();return}
     if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.hypot(dx,dy)>8)w._moved=true;
     if(zoom>1.03){panx=drag.px+dx;pany=drag.py+dy;apply();return}
-    ry=drag.ry+dx*.6;rx=Math.max(-28,Math.min(28,drag.rx-dy*.3));apply(1)});
+    ry=Math.max(-32,Math.min(32,drag.ry+dx*.3));rx=Math.max(-22,Math.min(22,drag.rx-dy*.25));apply(1)});
   const up=e=>{pts.delete(e.pointerId);if(pts.size<2)pinch=null;if(pts.size)return;if(!drag){return}drag=null;if(zoom>1.03)return;
-    const tot=base+ry,n=Math.round(tot/180);base=n*180;ry=0;rx=0;card.style.transition='transform .55s cubic-bezier(.2,.8,.2,1)';apply(0);setTimeout(()=>card.style.transition='',560)};
+    base=0;ry=0;rx=0;card.style.transition='transform .55s cubic-bezier(.2,.8,.2,1)';apply(0);setTimeout(()=>card.style.transition='',560)};
   w.addEventListener('pointerup',up);w.addEventListener('pointercancel',up);
   w.addEventListener('dblclick',()=>{if(zoom>1){zoom=1;panx=pany=0;w.classList.remove('zoomed');card.style.transition='transform .3s';apply()}});
   w._gyro=e=>{if(drag||pts.size||e.beta==null)return;if(gx===null){gx=e.gamma;gy=e.beta}ry=Math.max(-18,Math.min(18,(e.gamma-gx)*.7));rx=Math.max(-14,Math.min(14,-(e.beta-gy)*.5));apply(.8)};
