@@ -553,7 +553,7 @@ function openBinder(cv,b){if(REDUCED){go(x=>binder(x,b));return}if(document.quer
 const _binder=binder;binder=function(v,b){_binder(v,b);const hd=el('div','bhead');const cv=coverEl(b);cv.classList.add('small');hd.append(cv);
   const s=stats(b),t=el('div','bhead-t');t.append(el('b',null,eur(s.v)),el('small',null,`${s.g} de ${s.n} cartas`));hd.appendChild(t);v.prepend(hd);partsRun('motas',b.fc||'#ffcb05')};
 /* ---- doble página como en el PC (en horizontal, lado a lado) y pasar deslizando ---- */
-const LAYC={g43:4,g33:3,g22:2};
+const LAYC={g43:4,g33:3,g22:2,tl33:3};
 function spreadCount(b){return Math.floor(b.pages.length/2)}
 spread=function(v,b,sp,dir){document.body.classList.add('in-spread');const name=b.titles[sp]||`Hojas ${sp*2+1}–${sp*2+2}`;setHead(name,b.name+` · ${sp+1} de ${spreadCount(b)}`,true);
   const col=(b.colors[sp]||'#ffcb05');partsRun(partKind(name),col);
