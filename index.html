@@ -751,6 +751,9 @@ function rkView(v){setHead('Ranking de profit','Lo que más ha ganado y perdido'
 {const _h3=home;home=function(v){_h3(v);const k=[...v.querySelectorAll('.kpi')].find(d=>(d.querySelector('span')||{}).textContent==='PROFIT');
   if(k){k.classList.add('kpi-go');k.setAttribute('role','button');k.appendChild(el('i','kgo','Ver ranking ›'));k.onclick=()=>go(x=>rkView(x))}}}
 
+/* v137 · binder principal (el favorito del PC): cifras, Top 10, ranking y filtros lo usan por defecto */
+{const _la7=loadAll;loadAll=async function(){await _la7();try{const mb=(D.binders.find(b=>b.main)||D.binders.find(b=>b.kind!=='ventas')||D.binders[0]||{}).id;
+  if(mb){if(localStorage.getItem('pi-movil-main')!==mb){localStorage.setItem('pi-movil-main',mb);localStorage.setItem('pi-movil-kpi',JSON.stringify([mb]))}if(!F.__m7){F.__m7=1;F.b=mb}render()}}catch(e){}}}
 /* ---------- arranque ---------- */
 (async()=>{try{META=await getMeta()}catch(e){$('#perr').textContent=e.message;$('#lf').classList.add('hide');return}
   const k=await savedKey();if(k){KEY=k;loadAll();return}
