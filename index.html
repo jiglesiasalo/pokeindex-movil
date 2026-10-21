@@ -1313,6 +1313,43 @@ const MV_SRC='https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min
 const mvLoad=()=>MV_P||(MV_P=new Promise((ok,no)=>{if(customElements.get('model-viewer'))return ok();const s=document.createElement('script');s.type='module';s.src=MV_SRC;
   s.onload=()=>customElements.whenDefined('model-viewer').then(ok);s.onerror=()=>{MV_P=null;no(new Error('mv'))};document.head.appendChild(s)}));
 const glbURL=(id,shiny)=>`https://raw.githubusercontent.com/Pokemon-3D-api/assets/main/models/opt/${shiny?'shiny':'regular'}/${id}.glb`;
+const GLB={};
+async function glbHas(id,sh){try{const r=await fetch(glbURL(id,sh),{method:'HEAD'});return r.ok}catch(e){return false}}
+async function glbGet(id,sh,onp){const k=id+(sh?'s':'');if(GLB[k])return GLB[k];const r=await fetch(glbURL(id,sh));if(!r.ok)throw new Error(r.status===404?'404':'net');
+  const tot=+(r.headers.get('content-length')||0);let blob;
+  if(r.body&&r.body.getReader&&tot){const rd=r.body.getReader(),parts=[];let n=0;for(;;){const {done,value}=await rd.read();if(done)break;parts.push(value);n+=value.length;onp&&onp(Math.min(1,n/tot))}blob=new Blob(parts,{type:'model/gltf-binary'})}
+  else blob=new Blob([await r.arrayBuffer()],{type:'model/gltf-binary'});
+  const ab=await blob.arrayBuffer();if(ab.byteLength<20||new DataView(ab).getUint32(0,true)!==0x46546C67)throw new Error('404');blob=new Blob([glbFix(ab)],{type:'model/gltf-binary'});
+  return GLB[k]=URL.createObjectURL(blob)}
+/* algunos modelos usan un material antiguo (specular-glossiness) que hoy sale blanco: lo convierto al estándar */
+function glbFix(buf){try{const dv=new DataView(buf),jl=dv.getUint32(12,true);const js=JSON.parse(new TextDecoder().decode(new Uint8Array(buf,20,jl)));const E='KHR_materials_pbrSpecularGlossiness';let ch=false;
+  (js.materials||[]).forEach(m=>{const x=m.extensions&&m.extensions[E];if(!x)return;ch=true;const p={baseColorFactor:x.diffuseFactor||[1,1,1,1],metallicFactor:0,roughnessFactor:Math.max(.35,1-(x.glossinessFactor??.5))};if(x.diffuseTexture)p.baseColorTexture=x.diffuseTexture;m.pbrMetallicRoughness=p;delete m.extensions[E];if(!Object.keys(m.extensions).length)delete m.extensions});
+  if(!ch)return buf;['extensionsUsed','extensionsRequired'].forEach(k=>{if(js[k]){js[k]=js[k].filter(e=>e!==E);if(!js[k].length)delete js[k]}});
+  const jb=new TextEncoder().encode(JSON.stringify(js)),pad=(4-jb.length%4)%4,nj=new Uint8Array(jb.length+pad);nj.set(jb);nj.fill(0x20,jb.length);
+  const rest=new Uint8Array(buf,20+jl),out=new Uint8Array(20+nj.length+rest.length),o=new DataView(out.buffer);o.setUint32(0,0x46546C67,true);o.setUint32(4,2,true);o.setUint32(8,out.length,true);o.setUint32(12,nj.length,true);o.setUint32(16,0x4E4F534A,true);out.set(nj,20);out.set(rest,20+nj.length);return out.buffer}catch(e){return buf}}
+/* quita las peanas/discos planos que traen algunos modelos debajo */
+function p3Clean(mv){const sym=Object.getOwnPropertySymbols(mv).find(x=>x.description==='scene');const S=sym&&mv[sym];if(!S)return;S.updateMatrixWorld(true);const ms=[];S.traverse(o=>{if(o.isMesh&&o.geometry)ms.push(o)});if(ms.length<2)return;
+  const V=ms[0].position.constructor;const box=m=>{m.geometry.computeBoundingBox();const b=m.geometry.boundingBox,mn=new V(1e9,1e9,1e9),mx=new V(-1e9,-1e9,-1e9);
+    for(const x of [b.min.x,b.max.x])for(const y of [b.min.y,b.max.y])for(const z of [b.min.z,b.max.z]){const p=new V(x,y,z).applyMatrix4(m.matrixWorld);mn.min(p);mx.max(p)}return{mn,mx}};
+  const bs=ms.map(box),A={mn:new V(1e9,1e9,1e9),mx:new V(-1e9,-1e9,-1e9)};bs.forEach(b=>{A.mn.min(b.mn);A.mx.max(b.mx)});const H=A.mx.y-A.mn.y,W=A.mx.x-A.mn.x,Dd=A.mx.z-A.mn.z;let hid=0;
+  ms.forEach((m,i)=>{const b=bs[i],h=b.mx.y-b.mn.y,w=b.mx.x-b.mn.x,d=b.mx.z-b.mn.z;if(h<H*.04&&w>W*.55&&d>Dd*.55&&b.mn.y<=A.mn.y+H*.06){m.visible=false;hid++}});
+  if(hid){try{mv.updateFraming()}catch(e){}try{S.queueRender()}catch(e){}}}
+/* vida para los modelos sin animación: brazos abajo (si están en «T») y un reposo suave (respirar, cabeza, cola) */
+function p3Life(mv){const sym=Object.getOwnPropertySymbols(mv).find(x=>x.description==='scene');const S=sym&&mv[sym];if(!S)return null;
+  const bones=[];S.traverse(o=>{if(o.isBone)bones.push(o)});if(!bones.length)return null;
+  const V=bones[0].position.constructor,Q=bones[0].quaternion.constructor,E=bones[0].rotation.constructor;const nm=b=>b.name.replace(/_\d+$/,'');
+  S.updateMatrixWorld(true);
+  bones.filter(b=>/^[LR](Arm|UpperArm)$/i.test(nm(b))).forEach(b=>{const ch=b.children.find(c=>c.isBone&&/ForeArm|Elbow/i.test(nm(c)))||b.children.find(c=>c.isBone);if(!ch)return;
+    const p0=b.getWorldPosition(new V()),p1=ch.getWorldPosition(new V());const dir=p1.sub(p0).normalize();if(Math.abs(dir.y)>.5)return;
+    const tgt=new V(dir.x*.42,-.86,Math.max(dir.z,0)*.4+.2).normalize();const qd=new Q().setFromUnitVectors(dir,tgt);
+    const pq=b.parent.getWorldQuaternion(new Q()),bq=b.getWorldQuaternion(new Q());b.quaternion.copy(pq.invert().multiply(qd.multiply(bq)));b.updateMatrixWorld(true);
+    const fa=ch;if(/ForeArm|Elbow/i.test(nm(fa))){fa.quaternion.multiply(new Q().setFromEuler(new E(0,0,0)))}});
+  const pick=re=>bones.filter(b=>re.test(nm(b)));const groups=[[pick(/^(Spine\d?|Waist)$/i),(t,i)=>new E(Math.sin(t*1.7)*.022,0,0)],[pick(/^(Head|Neck\d?)$/i),(t,i)=>new E(Math.sin(t*1.3+.6)*.03,Math.sin(t*.7)*.05,Math.sin(t*.9)*.025)],
+    [pick(/^Tail\d+$/i),(t,i)=>new E(0,Math.sin(t*1.9-i*.55)*.09,Math.sin(t*1.1-i*.4)*.03)],[pick(/^[LR](Ear|Feeler)\w*1?$/i),(t,i)=>new E(Math.sin(t*2.3+i)*.05,0,0)],[pick(/^[LR](Arm|UpperArm)$/i),(t,i)=>new E(0,0,Math.sin(t*1.7+i*3)*.03)]];
+  const base=new Map();groups.forEach(([L])=>L.forEach(b=>base.set(b,b.quaternion.clone())));
+  let raf=0,run=true;const t0=performance.now();const tick=()=>{if(!run)return;const t=(performance.now()-t0)/1000;
+    groups.forEach(([L,f])=>L.forEach((b,i)=>{b.quaternion.copy(base.get(b)).multiply(new Q().setFromEuler(f(t,i)))}));try{S.queueRender()}catch(e){}raf=requestAnimationFrame(tick)};tick();
+  return()=>{run=false;cancelAnimationFrame(raf);base.forEach((q,b)=>b.quaternion.copy(q))}}
 async function pk3dOpen(c,info){if(!info){try{info=await pkForCard(c)}catch(e){}}if(!info){mtoast('No reconozco el Pokémon de esta carta');return}
   const ov=el('div','p3-ov');const v=el('video','p3-cam');v.playsInline=true;v.muted=true;v.autoplay=true;v.setAttribute('playsinline','');
   const top=el('div','p3-top'),x=el('button','p3-x','✕');x.type='button';x.setAttribute('aria-label','Cerrar');const tt=el('div','p3-tt');tt.append(el('b',null,`#${String(info.id).padStart(3,'0')} · ${info.name}`),el('small',null,[info.genus,info.h?`mide ${String(info.h/10).replace('.',',')} m`:'',info.w?`pesa ${String(info.w/10).replace('.',',')} kg`:''].filter(Boolean).join(' · ')));
@@ -1322,21 +1359,32 @@ async function pk3dOpen(c,info){if(!info){try{info=await pkForCard(c)}catch(e){}
   bot.append(bCam,bShiny,bAnim,bCry);const hint=el('div','p3-hint','Gira con un dedo · pellizca para acercar');
   ov.append(v,stg,load,top,hint,bot);document.body.appendChild(ov);document.body.classList.add('noscroll');requestAnimationFrame(()=>ov.classList.add('in'));
   let stream=null,shiny=false,gyro=null,anims=[],ai=-1,mv=null,closed=false;
-  const close=()=>{if(closed)return;closed=true;if(stream)stream.getTracks().forEach(t=>t.stop());if(gyro)removeEventListener('deviceorientation',gyro);removeEventListener('popstate',onPop);
+  const close=()=>{if(closed)return;closed=true;try{if(idle)idle()}catch(e){}if(stream)stream.getTracks().forEach(t=>t.stop());if(gyro)removeEventListener('deviceorientation',gyro);removeEventListener('popstate',onPop);
     ov.classList.remove('in');document.body.classList.remove('noscroll');setTimeout(()=>ov.remove(),300)};
   history.pushState({p3:1},'');const onPop=()=>close();addEventListener('popstate',onPop);x.onclick=()=>{if(history.state&&history.state.p3)history.back();else close()};
   bCry.hidden=!info.cry;bCry.onclick=()=>pkCry(info.cry,bCry);
   try{await mvLoad()}catch(e){load.innerHTML='<span>Sin conexión: no puedo cargar el visor 3D.</span>';return}
-  mv=document.createElement('model-viewer');Object.assign(mv,{});mv.setAttribute('src',glbURL(info.id,false));mv.setAttribute('alt',info.name);
+  mv=document.createElement('model-viewer');mv.setAttribute('alt',info.name);
   ['camera-controls','auto-rotate'].forEach(a=>mv.setAttribute(a,''));mv.setAttribute('shadow-intensity','1.3');mv.setAttribute('shadow-softness','.7');mv.setAttribute('exposure','1.05');
   mv.setAttribute('interaction-prompt','none');mv.setAttribute('auto-rotate-delay','600');mv.setAttribute('rotation-per-second','18deg');mv.setAttribute('camera-orbit','25deg 78deg 105%');mv.setAttribute('touch-action','none');
   mv.setAttribute('environment-image','neutral');mv.className='p3-mv';stg.appendChild(mv);
-  mv.addEventListener('progress',e=>{const p=e.detail&&e.detail.totalProgress;load.querySelector('span').textContent=`Cargando el modelo 3D… ${Math.round((p||0)*100)} %`;load.style.setProperty('--p',((p||0)*100)+'%')});
-  mv.addEventListener('load',()=>{load.classList.add('done');anims=mv.availableAnimations||[];bAnim.hidden=!anims.length;mv.animate&&0;
-    const idle=anims.findIndex(n=>/idle|wait|stand|loop/i.test(n));if(idle>=0){ai=idle;mv.animationName=anims[ai];mv.play()}if(navigator.vibrate)navigator.vibrate(8)});
-  mv.addEventListener('error',()=>{load.classList.remove('done');load.innerHTML=shiny?'<span>Este Pokémon no tiene modelo variocolor.</span>':'<span>Este Pokémon todavía no tiene modelo 3D.</span>'});
-  bShiny.onclick=()=>{shiny=!shiny;bShiny.classList.toggle('on',shiny);load.classList.remove('done');load.innerHTML='<i></i><span>Cargando…</span>';mv.setAttribute('src',glbURL(info.id,shiny))};
-  bAnim.onclick=()=>{if(!anims.length)return;ai=(ai+1)%anims.length;mv.animationName=anims[ai];mv.currentTime=0;mv.play();bAnim.textContent='▶ '+(ai+1)+'/'+anims.length};
+  let idle=null,busy=false;const msg=t=>{load.classList.remove('done');load.innerHTML='<span></span>';load.querySelector('span').textContent=t};
+  const prog=p=>{load.classList.remove('done');if(!load.querySelector('i'))load.innerHTML='<i></i><span></span>';load.querySelector('span').textContent=`Cargando el modelo 3D… ${Math.round(p*100)} %`;load.style.setProperty('--p',(p*100)+'%')};
+  /* el modelo se descarga aparte (con progreso real); si no existe, se avisa en vez de quedarse colgado */
+  const loadModel=async sh=>{if(busy)return false;busy=true;prog(0);let to=setTimeout(()=>{if(busy)load.querySelector('span').textContent='Tarda un poco… el modelo es grande'},12000);
+    try{const u=await glbGet(info.id,sh,prog);if(closed)return false;if(idle){idle();idle=null}mv.setAttribute('src',u);return true}
+    catch(e){if(e.message==='404'){if(sh){mtoast('Este Pokémon no tiene modelo variocolor');load.classList.add('done')}else msg('Este Pokémon todavía no tiene modelo 3D.')}else{if(sh)load.classList.add('done');mtoast('No he podido descargar el modelo')}return false}
+    finally{clearTimeout(to);busy=false}};
+  mv.addEventListener('load',()=>{load.classList.add('done');try{p3Clean(mv)}catch(e){}const all=mv.availableAnimations||[];anims=all.filter(n=>!/eye\d|mouth\d|turn_[lr]|_start$|_end$|stepout|land\d|_\d{5}_?(10|2)\d{4}/i.test(n));if(!anims.length)anims=all.slice();bAnim.hidden=!anims.length;ai=-1;bAnim.textContent='▶ Animación';
+    const pick=anims.findIndex(n=>/wait|idle|stand|loop/i.test(n)&&!/battle|turn|dizzy|down|lose/i.test(n));
+    if(pick>=0){ai=pick;mv.animationName=anims[ai];mv.play()}
+    else{/* sin animación de reposo: bajo los brazos si está en «T» y le doy un respirar suave */try{idle=p3Life(mv)}catch(e){console.warn(e)}}
+    if(navigator.vibrate)navigator.vibrate(8)});
+  mv.addEventListener('error',()=>{msg(shiny?'Este Pokémon no tiene modelo variocolor.':'No he podido abrir este modelo 3D.')});
+  bShiny.hidden=true;glbHas(info.id,true).then(ok=>{bShiny.hidden=!ok});
+  bShiny.onclick=async()=>{if(busy)return;const want=!shiny;if(await loadModel(want)){shiny=want;bShiny.classList.toggle('on',shiny)}};
+  bAnim.onclick=()=>{if(!anims.length)return;if(idle){idle();idle=null}ai=(ai+1)%anims.length;mv.animationName=anims[ai];mv.currentTime=0;mv.play();bAnim.textContent='▶ '+(ai+1)+'/'+anims.length};
+  loadModel(false);
   /* cámara de fondo + giroscopio: al mover el móvil alrededor, el Pokémon se queda quieto en su sitio */
   const startCam=async()=>{try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});v.srcObject=stream;await v.play().catch(()=>{});ov.classList.add('cam');bCam.classList.add('on');
       try{askMotion()}catch(e){}let a0=null,th0=25,touching=false;mv.removeAttribute('auto-rotate');
