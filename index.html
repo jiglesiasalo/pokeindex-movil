@@ -609,6 +609,11 @@ body.alb-on header,body.alb-on nav,body.alb-on main{visibility:hidden}
 .p3-load i{width:150px;height:5px;border-radius:3px;background:rgba(255,255,255,.15);overflow:hidden;position:relative}
 .p3-load i::after{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--p,5%);background:var(--y);transition:width .2s}
 .p3-load.done{opacity:0;pointer-events:none}
+/* v150 · logo en Mis binders */
+.m-logo{position:relative;display:flex;justify-content:center;margin:-6px 0 6px;pointer-events:none}
+.m-logo video{width:min(62vw,250px);aspect-ratio:640/460;object-fit:cover;background:transparent;
+  -webkit-mask-image:radial-gradient(ellipse closest-side at 50% 48%,#000 80%,transparent 100%);mask-image:radial-gradient(ellipse closest-side at 50% 48%,#000 80%,transparent 100%);animation:mlogoIn .7s cubic-bezier(.2,.8,.2,1)}
+@keyframes mlogoIn{from{opacity:0;transform:scale(.92)}}
 </style></head>
 <body>
 <div id="lock">
@@ -1482,6 +1487,12 @@ function spineOpen(sp,b){if(REDUCED||document.querySelector('.ob-ov')||sp._busy)
         ov.animate([{opacity:1},{opacity:0}],{duration:360,easing:'ease-in',fill:'forwards'}).onfinish=()=>{ov.remove();sp.style.visibility='';pull.cancel();lean.forEach(a=>a.cancel());sp._busy=false}}}}}
 
 /* v141: sin código propio (los cambios están en v139m.js y v140m.js) */
+
+/* ===================== v150 · el logo animado en Mis binders (arriba, sin romper la página) ===================== */
+{const _h50=home;home=function(v){_h50(v);if(v.querySelector('.m-logo'))return;
+  const w=el('div','m-logo');const vd=document.createElement('video');vd.src='logo.mp4';vd.poster='logo-poster.webp';vd.muted=true;vd.loop=true;vd.autoplay=true;vd.playsInline=true;vd.setAttribute('playsinline','');vd.setAttribute('aria-label','PokeIndex · TCG Organizer');
+  if(REDUCED)vd.removeAttribute('autoplay');w.appendChild(vd);v.prepend(w);vd.play&&vd.play().catch(()=>{})}}
+{const _oa=offlineAll;offlineAll=function(onp){try{['logo.mp4','logo-poster.webp'].forEach(u=>fetch(u).catch(()=>{}))}catch(e){}return _oa.apply(this,arguments)}}
 
 /* ---------- arranque ---------- */
 (async()=>{try{META=await getMeta()}catch(e){$('#perr').textContent=e.message;$('#lf').classList.add('hide');return}
