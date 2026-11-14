@@ -1481,7 +1481,6 @@ function spineOpen(sp,b){if(REDUCED||document.querySelector('.ob-ov')||sp._busy)
   const inn=face('inner',W,H,`translateZ(${Dp/2-4}px)`);const io=el('div','ob-in');const g=el('div','ob-grid');const pg=(b.pages[1]||[]).slice(0,9);const cells=[];
   for(let k=0;k<9;k++){const c=pg[k],s=el('i','ob-s');if(c){const u=imgOf(c);if(u){const im=el('img');im.alt='';im.decoding='async';im.src=u;s.appendChild(im)}}s.style.opacity='0';cells.push(s);g.appendChild(s)}io.append(g,el('i','ob-shade'));inn.appendChild(io);
   /* tres hojas de fundas que siguen a la tapa */
-  const leaves=[0,1,2].map(k=>{const lf=el('div','fb-leaf');Object.assign(lf.style,{width:W+'px',height:H+'px',transform:`translateZ(${Dp/2-3+k}px)`,opacity:'0'});lf.appendChild(el('i'));bk.appendChild(lf);return lf});
   const flap=el('div','fb-flap');Object.assign(flap.style,{width:W+'px',height:H+'px',transform:`translateZ(${Dp/2}px)`});const fr=coverEl(b);fr.classList.add('ob-front');const lin=el('div','ob-lin');lin.style.setProperty('--fc',fc);
   const gl=el('div','fb-gl');const band=el('i');gl.appendChild(band);flap.append(fr,lin,gl);bk.appendChild(flap);
   ov.append(bg,glow,floor,bk);
@@ -1502,13 +1501,9 @@ function spineOpen(sp,b){if(REDUCED||document.querySelector('.ob-ov')||sp._busy)
       bk.animate([{transform:'none'},{transform:`translateX(${W/2}px)`}],{duration:OD,easing:'cubic-bezier(.5,0,.25,1)',fill:'forwards'});
       floor.animate([{transform:'scaleX(1)'},{transform:'scaleX(1.7)'}],{duration:OD,easing:'cubic-bezier(.5,0,.25,1)',fill:'forwards'});
       io.querySelector('.ob-shade').animate([{opacity:.85},{opacity:0}],{duration:OD,easing:'ease-out',fill:'forwards'});
-      const op=flap.animate([{transform:`${ZT} rotateY(0deg)`},{transform:`${ZT} rotateY(-12deg)`,offset:.12},{transform:`${ZT} rotateY(-187deg)`,offset:.84},{transform:`${ZT} rotateY(-180deg)`}],{duration:OD,easing:'cubic-bezier(.42,.03,.22,1)',fill:'forwards'});
-      leaves.forEach((lf,k)=>{const z=`translateZ(${Dp/2-3+k}px)`;lf.animate([{transform:`${z} rotateY(0deg)`,opacity:0},{opacity:.95,offset:.1},{transform:`${z} rotateY(${-100-k*4}deg)`,opacity:.9,offset:.58},{transform:`${z} rotateY(${-178+k*2}deg)`,opacity:0}],{duration:620,delay:110+(2-k)*80,easing:'cubic-bezier(.4,.05,.25,1)',fill:'both'})});
+      const op=flap.animate([{transform:`${ZT} rotateY(0deg)`},{transform:`${ZT} rotateY(-180deg)`}],{duration:OD,easing:'cubic-bezier(.45,.02,.2,1)',fill:'forwards'});
       cells.forEach((s,k)=>{s.style.opacity='';s.animate([{opacity:0,transform:'translateY(9px) scale(.86)'},{opacity:1,transform:'translateY(-2px) scale(1.04)',offset:.7},{opacity:1,transform:'none'}],{duration:380,delay:OD*.34+(k%3)*55+Math.floor(k/3)*40,easing:'cubic-bezier(.2,.8,.3,1)',fill:'backwards'})});
       glow.animate([{opacity:.75,transform:'scale(1)'},{opacity:1,transform:'scale(1.35)'}],{duration:OD,easing:'ease-out',fill:'forwards'});
-      for(let k=0;k<16;k++){const m=el('i','ob-mote');const y=cy-H/2+H*(.08+Math.random()*.84),dx=(Math.random()<.5?-1:1)*(18+Math.random()*W*.9),dy=-20-Math.random()*90,sz=3+Math.random()*4;
-        Object.assign(m.style,{left:cx+'px',top:y+'px',width:sz+'px',height:sz+'px'});m.style.setProperty('--fc',fc);ov.appendChild(m);
-        m.animate([{transform:'translate(0,0) scale(.3)',opacity:0},{opacity:1,offset:.2},{transform:`translate(${dx}px,${dy}px) scale(1)`,opacity:0}],{duration:700+Math.random()*500,delay:OD*.3+Math.random()*300,easing:'cubic-bezier(.15,.7,.3,1)',fill:'both'})}
       if(navigator.vibrate)setTimeout(()=>navigator.vibrate(6),OD*.7);
       op.onfinish=()=>{go(x=>binder(x,b));
         /* 4 · la cámara entra en la doble página y aparece el binder */
